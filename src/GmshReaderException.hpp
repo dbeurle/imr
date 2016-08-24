@@ -21,7 +21,7 @@ public:
             fileExtension(fileExtension)
     {
     }
-    const char* what() const _GLIBCXX_USE_NOEXCEPT;
+    const char* what() const _GLIBCXX_USE_NOEXCEPT{}
 
 protected:
     std::string partName;
@@ -35,7 +35,7 @@ public:
 			gmshFile(gmshFile)
 	{
 	}
-	const char* what() const _GLIBCXX_USE_NOEXCEPT;
+        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
 
 protected:
 	std::string gmshFile;
@@ -49,7 +49,7 @@ public:
 	{
 	}
 
-	const char* what() const _GLIBCXX_USE_NOEXCEPT;
+        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
 
 protected:
 	std::string gmshFile;
@@ -60,7 +60,7 @@ class GmshTagException: public GmshReaderException
 public:
 	GmshTagException() = default;
 
-	const char* what() const _GLIBCXX_USE_NOEXCEPT;
+        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
 
 };
 
@@ -72,7 +72,7 @@ public:
 	{
 	}
 
-	const char* what() const _GLIBCXX_USE_NOEXCEPT;
+        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
 
 protected:
 	short elementType;

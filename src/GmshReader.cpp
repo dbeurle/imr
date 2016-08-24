@@ -51,67 +51,59 @@ void GmshReader::fillMesh()
         }
         else if (token == "$PhysicalNames")
         {
-            int dimension, physicalId, physicalIds;
             std::string physicalName;
-
+            int physicalIds = 0;
             gmshFile >> physicalIds;
-
-            for (auto physicalId = 0; physicalId < physicalIds; physicalId++)
+            for (auto physicalId = 0; physicalId < physicalIds; ++physicalId)
             {
+                int dimension = 0;
                 gmshFile >> dimension >> physicalId >> physicalName;
 
                 // Extract the name from the quotes //
                 physicalName.erase(remove(physicalName.begin(), physicalName.end(), '\"'),
                                    physicalName.end());
-                physicalNames.push_back(physicalName);
+                physicalGroupMap.emplace(physicalId, physicalName);
             }
             token.clear();
             gmshFile >> token;
         }
         else if (token == "$Nodes")
         {
-            auto globalNodeIds = 0u;
-            gmshFile >> globalNodeIds;
+            int nodeIds = 0;
+            gmshFile >> nodeIds;
+            nodeList.resize(nodeIds);
 
-            //mesh.setNumberOfNodes(globalNodeIds);
+            for (auto& node : nodeList)
+                gmshFile >> node.id >> node.coordinates[0] >> node.coordinates[1] >> node.coordinates[2];
 
-            for (auto globalNodeId = 0; globalNodeId < globalNodeIds; globalNodeId++)
-            {
-                // Need to come up with a nodal coordinate format too
-                // maybe a vector / valarray of tuples?
-
-                // gmshFile >> null >> mesh.setNodeCoordinates(0, globalNodeId)
-                //                  >> mesh.setNodeCoordinates(1, globalNodeId)
-                //                  >> mesh.setNodeCoordinates(2, globalNodeId);
-            }
         }
         else if (token == "$Elements")
         {
-            auto elementIds = 0u;
+            int elementIds = 0;
             gmshFile >> elementIds;
-            for (auto elementId = 0; elementId < elementIds; elementId++)
+            for (int elementId = 0; elementId < elementIds; elementId++)
             {
-                auto physicalId = 0u, nodeIds = 0u, numberOfTags = 0u;
-                auto elementTypeNum = 0;
+                int id             = 0;
+                int numberOfTags   = 0;
+                int elementTypeNum = 0;
 
-                gmshFile >> null >> elementTypeNum >> numberOfTags;
+                gmshFile >> id >> elementTypeNum >> numberOfTags;
 
-                ElementData elementData(mapElementData(elementTypeNum),
+                int numberOfNodes = mapElementData(elementTypeNum);
+
+                ElementData elementData(numberOfNodes,
                                         numberOfTags,
-                                        elementTypeNum);
+                                        elementTypeNum,
+                                        id);
 
-                for (auto tag = 0; tag < numberOfTags; tag++)
-                {
-                    gmshFile >> elementData.tags[tag];
-                }
-                for (auto nodeId = 0; nodeId < nodeIds; nodeId++)
-                {
-                    // Read-in the nodal connectivity data and convert to
-                    // zero-based indexing
-                    gmshFile >> elementData.nodalConnectivity[nodeId];
-                    elementData.nodalConnectivity[nodeId]--;
-                }
-                gmshMesh[physicalNames[--elementData.tags[0]]].push_back(elementData);
+                for (auto& tag : elementData.tags)
+                    gmshFile >> tag;
+
+                for (auto& nodeId : elementData.nodalConnectivity)
+                    gmshFile >> nodeId;
+
+                int physicalId = elementData.tags[0];
+                gmshMesh[physicalNames[physicalId]].push_back(elementData);
             }
         }
     }
@@ -153,6 +145,6 @@ short GmshReader::mapElementData(int elementType)
 
 void GmshReader::checkSupportedGmsh(float gmshVersion)
 {
-    if (gmshVersion < 2.2) Warn<< "WARNING: gmsh unsupported\n";
+    if (gmshVersion < 2.2) std::cout<< "WARNING: gmsh unsupported\n";
 }
 }

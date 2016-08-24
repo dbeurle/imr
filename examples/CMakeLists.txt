@@ -1,1 +1,3 @@
+
 ADD_EXECUTABLE(first_example first_example.cpp)
+TARGET_LINK_LIBRARIES(first_example LINK_PUBLIC GmshReader)

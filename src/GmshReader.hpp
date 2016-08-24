@@ -8,21 +8,29 @@
 #include <vector>
 #include <valarray>
 #include <fstream>
-#include <unordered_map>
+#include <map>
 
 namespace neon
 {
 struct ElementData
 {
-    ElementData(unsigned numberOfNodes, unsigned numberOfTags, unsigned elementType) :
+    ElementData(int numberOfNodes, int numberOfTags, int elementType, int id) :
         tags(numberOfTags, 0),
         nodalConnectivity(numberOfNodes, 0),
-        elementType(elementType)
+        elementType(elementType),
+        id(id)
     {
     }
-    std::valarray<int> tags;
-    std::valarray<int> nodalConnectivity;
+    std::vector<int> tags;
+    std::vector<int> nodalConnectivity;
     int elementType;
+    int id;
+};
+
+struct NodeData
+{
+    int id;
+    std::array<double, 3> coordinates;
 };
 
 /*!
@@ -46,7 +54,7 @@ public:
     /** Gmsh element numbering scheme */
     enum { LINE2 = 1, TRI3, QUAD4, TETRA4, HEX8, PRISM6, TRI6 = 9, TETRA10 = 11};
 
-    const std::unordered_map<StringKey, Value>& mesh() const {return gmshMesh;}
+    const std::map<StringKey, Value>& mesh() const {return gmshMesh;}
 
 private:
 
@@ -76,12 +84,14 @@ private:
 
 private:
 
-    std::unordered_map<StringKey, Value> gmshMesh;
+    std::map<StringKey, Value> gmshMesh;
+    std::map<int, std::string> physicalGroupMap;
 
-private:
+    std::vector<NodeData> nodeList;
 
     std::string fileName;   //!< File name of gmsh file
     std::fstream gmshFile;  //!< Hold an object to the file stream
+
 
 };
 }

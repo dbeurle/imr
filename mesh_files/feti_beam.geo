@@ -38,7 +38,7 @@ ps = news;  Plane Surface(ps) = {ll};
 Transfinite Surface {ps};
 
 // physical surface
-phys = newreg; Physical Surface(phys) = {ps};
+Physical Surface("domain") = {ps};
 
 // left boundary
 Physical Line("left boundary") = l4;
