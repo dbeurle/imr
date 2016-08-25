@@ -105,9 +105,9 @@ private:
      * Provide a reference to the nodes and dimensions that will be populated
      * with the correct data based on the elementType
      * @param Gmsh element number
-     * @return number of nodes per element
+     * @return elementType number of nodes per element
      */
-    short mapElementData(int elementType);
+    int mapElementData(int elementType);
 
     /**
      * Check the version of gmsh is support otherwise print out a warning
@@ -126,7 +126,6 @@ private:
 
     std::string fileName;   //!< File name of gmsh file
     std::fstream gmshFile;  //!< Hold an object to the file stream
-
 
 };
 }

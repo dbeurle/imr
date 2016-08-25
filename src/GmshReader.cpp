@@ -12,7 +12,7 @@ namespace neon
 {
 GmshReader::GmshReader(const std::string& fileName)
 {
-    if (!this->parse(fileName)) throw GmshFileParseException(fileName);
+    parse(fileName);
 }
 
 bool GmshReader::parse(const std::string& inputFileName)
@@ -30,13 +30,14 @@ void GmshReader::fillMesh()
 {
     gmshFile.open(fileName.c_str());
 
-    if (!gmshFile.is_open()) throw GmshFileOpenException(fileName);
+    if (!gmshFile.is_open())
+        throw GmshReaderException("Filename " + fileName + " is not valid");
 
     std::string token, null;
 
     std::vector<std::string> physicalNames;
 
-    // Loop around file and read in lines //
+    // Loop around file and read in keyword tokens
     while (!gmshFile.eof())
     {
         gmshFile >> token;
@@ -59,7 +60,7 @@ void GmshReader::fillMesh()
                 int dimension = 0;
                 gmshFile >> dimension >> physicalId >> physicalName;
 
-                // Extract the name from the quotes //
+                // Extract the name from the quotes
                 physicalName.erase(remove(physicalName.begin(), physicalName.end(), '\"'),
                                    physicalName.end());
                 physicalGroupMap.emplace(physicalId, physicalName);
@@ -110,41 +111,46 @@ void GmshReader::fillMesh()
     gmshFile.close();
 }
 
-short GmshReader::mapElementData(int elementType)
+int GmshReader::mapElementData(int elementType)
 {
 	switch (elementType)
 	{
 	case LINE2:
 		return 2;
 		break;
-	case TRI3:
+	case TRIANGLE3:
 		return 3;
 		break;
-	case QUAD4:
+	case QUADRILATERAL4:
 		return 4;
 		break;
-	case TETRA4:
+	case TETRAHEDRON4:
 		return 4;
 		break;
-	case HEX8:
+	case HEXAHEDRON8:
 		return 8;
 		break;
 	case PRISM6:
 		return 6;
 		break;
-	case TRI6:
+	case TRIANGLE6:
 		return 6;
 		break;
-	case TETRA10:
+	case TETRAHEDRON10:
 		return 10;
 		break;
 	default:
-		throw GmshElementCodeException(elementType);
+		throw GmshReaderException("The elementTypeId "
+                                  + std::to_string(elementType)
+                                  + " is not implemented");
 	}
 }
 
 void GmshReader::checkSupportedGmsh(float gmshVersion)
 {
-    if (gmshVersion < 2.2) std::cout<< "WARNING: gmsh unsupported\n";
+    if (gmshVersion < 2.2)
+        throw GmshReaderException("GmshVersion "
+                                  + std::to_string(gmshVersion)
+                                  + " is not supported");
 }
 }

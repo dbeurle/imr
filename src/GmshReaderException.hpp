@@ -2,80 +2,20 @@
  * For licensing please refer to the LICENSE.md file
  */
 
-#ifndef IO_GMSHREADEREXCEPTION_HPP_
-#define IO_GMSHREADEREXCEPTION_HPP_
+#pragma once
 
-#include <exception>
+#include <stdexcept>
+#include <string>
 
-class GmshReaderException: public std::exception
+class GmshReaderException: public std::runtime_error
 {
 public:
-	GmshReaderException() = default;
+    GmshReaderException(const std::string& msg) : std::runtime_error(msg){}
 };
 
-class GmshMeshFormatException: public GmshReaderException
+class UnsupportedGmshVersion: public std::runtime_error
 {
 public:
-    GmshMeshFormatException(std::string partName, std::string fileExtension):
-            partName(partName),
-            fileExtension(fileExtension)
-    {
-    }
-    const char* what() const _GLIBCXX_USE_NOEXCEPT{}
-
-protected:
-    std::string partName;
-    std::string fileExtension;
+    UnsupportedGmshVersion(const std::string& msg):
+        std::runtime_error(msg){}
 };
-
-class GmshFileOpenException: public GmshReaderException
-{
-public:
-	GmshFileOpenException(std::string gmshFile) :
-			gmshFile(gmshFile)
-	{
-	}
-        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
-
-protected:
-	std::string gmshFile;
-};
-
-class GmshFileParseException: public GmshReaderException
-{
-public:
-	GmshFileParseException(std::string gmshFile) :
-			gmshFile(gmshFile)
-	{
-	}
-
-        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
-
-protected:
-	std::string gmshFile;
-};
-
-class GmshTagException: public GmshReaderException
-{
-public:
-	GmshTagException() = default;
-
-        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
-
-};
-
-class GmshElementCodeException: public GmshReaderException
-{
-public:
-	GmshElementCodeException(const short& elementType) :
-			elementType(elementType)
-	{
-	}
-
-        const char* what() const _GLIBCXX_USE_NOEXCEPT{}
-
-protected:
-	short elementType;
-};
-
-#endif /* IO_GMSHREADEREXCEPTION_HPP_ */
