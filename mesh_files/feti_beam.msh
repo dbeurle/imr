@@ -3,7 +3,7 @@ $MeshFormat
 $EndMeshFormat
 $PhysicalNames
 2
-1 2 "left boundary"
+1 2 "left_boundary"
 2 1 "domain"
 $EndPhysicalNames
 $Nodes

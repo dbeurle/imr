@@ -41,7 +41,7 @@ Transfinite Surface {ps};
 Physical Surface("domain") = {ps};
 
 // left boundary
-Physical Line("left boundary") = l4;
+Physical Line("left_boundary") = l4;
 
 Mesh.MshFilePartitioned = 0; // 0=no, 1=yes, 2=create physicals by partition
 Mesh.RecombineAll       = 0; // 0=no, 1=yes

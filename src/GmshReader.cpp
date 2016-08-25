@@ -8,6 +8,8 @@
 
 #include "GmshReaderException.hpp"
 
+#include <iomanip>
+
 namespace neon
 {
 GmshReader::GmshReader(const std::string& fileName)
@@ -55,9 +57,10 @@ void GmshReader::fillMesh()
             std::string physicalName;
             int physicalIds = 0;
             gmshFile >> physicalIds;
-            for (auto physicalId = 0; physicalId < physicalIds; ++physicalId)
+            for (auto i = 0; i < physicalIds; ++i)
             {
-                int dimension = 0;
+                int dimension   = 0;
+                int physicalId  = 0;
                 gmshFile >> dimension >> physicalId >> physicalName;
 
                 // Extract the name from the quotes
@@ -104,7 +107,7 @@ void GmshReader::fillMesh()
                     gmshFile >> nodeId;
 
                 int physicalId = elementData.tags[0];
-                gmshMesh[physicalNames[physicalId]].push_back(elementData);
+                gmshMesh[physicalGroupMap[physicalId]].push_back(elementData);
             }
         }
     }
@@ -153,4 +156,51 @@ void GmshReader::checkSupportedGmsh(float gmshVersion)
                                   + std::to_string(gmshVersion)
                                   + " is not supported");
 }
+
+void GmshReader::writeMesh(const std::string& fileName)
+{
+    std::ofstream file(fileName);
+
+    if(not file.is_open())
+        throw GmshReaderException("Failed to open " + fileName);
+
+    int numElements = 0;
+    for (const auto& physicalGroup : gmshMesh)
+        numElements += physicalGroup.second.size();
+
+    file << "numNodes    \t" << nodeList.size()     << "\n";
+    file << "numElements \t" << numElements         << "\n";
+
+    file << "Nodes \n";
+    for (const auto& node : nodeList)
+    {
+        file << std::setw(10) << std::right << node.id << "\t";
+        file << std::setw(10) << std::right << node.coordinates[0] << "\t";
+        file << std::setw(10) << std::right << node.coordinates[1] << "\t";
+        file << std::setw(10) << std::right << node.coordinates[2] << "\n";
+    }
+
+
+
+    for (const auto& pairNameAndElements : gmshMesh)
+    {
+        file << "Physical group \t" << pairNameAndElements.first << "\n";
+        file << "Elements \n";
+        for (const auto& element : pairNameAndElements.second)
+        {
+            file << std::setw(10) << std::right << element.id << "\t";
+            for (const auto& nodeId : element.nodalConnectivity)
+                file << std::setw(10) << std::right << nodeId << "\t";
+
+            file << "\n";
+        }
+
+     }
+
+
+    file.close();
+
+
+}
+
 }

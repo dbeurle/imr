@@ -91,6 +91,8 @@ public:
 
     const std::map<StringKey, Value>& mesh() const {return gmshMesh;}
 
+    void writeMesh(const std::string& fileName);
+
 private:
 
     /**
