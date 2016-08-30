@@ -10,14 +10,14 @@
 
 #include <iomanip>
 
-namespace neon
+namespace gmsh
 {
-GmshReader::GmshReader(const std::string& fileName)
+Reader::Reader(const std::string& fileName)
 {
     parse(fileName);
 }
 
-bool GmshReader::parse(const std::string& inputFileName)
+bool Reader::parse(const std::string& inputFileName)
 {
     fileName = inputFileName;
 
@@ -28,7 +28,7 @@ bool GmshReader::parse(const std::string& inputFileName)
     return true;
 }
 
-void GmshReader::fillMesh()
+void Reader::fillMesh()
 {
     gmshFile.open(fileName.c_str());
 
@@ -114,42 +114,53 @@ void GmshReader::fillMesh()
     gmshFile.close();
 }
 
-int GmshReader::mapElementData(int elementType)
+int Reader::mapElementData(int elementType)
 {
+    int lnodeIds = 0;
 	switch (elementType)
 	{
-	case LINE2:
-		return 2;
-		break;
-	case TRIANGLE3:
-		return 3;
-		break;
-	case QUADRILATERAL4:
-		return 4;
-		break;
-	case TETRAHEDRON4:
-		return 4;
-		break;
-	case HEXAHEDRON8:
-		return 8;
-		break;
-	case PRISM6:
-		return 6;
-		break;
-	case TRIANGLE6:
-		return 6;
-		break;
-	case TETRAHEDRON10:
-		return 10;
-		break;
+        case LINE2:          lnodeIds = 2;  break;
+        case TRIANGLE3:      lnodeIds = 3;  break;
+        case QUADRILATERAL4: lnodeIds = 4;  break;
+        case TETRAHEDRON4:   lnodeIds = 4;  break;
+        case HEXAHEDRON8:    lnodeIds = 8;  break;
+        case PRISM6:         lnodeIds = 6;  break;
+        case PYRAMID5:       lnodeIds = 5;  break;
+        case LINE3:          lnodeIds = 3;  break;
+        case TRIANGLE6:      lnodeIds = 6;	break;
+        case QUADRILATERAL9: lnodeIds = 9;  break;
+        case TETRAHEDRON10:  lnodeIds = 10;	break;
+        case HEXAHEDRON27:   lnodeIds = 27; break;
+        case PRISM18:        lnodeIds = 18; break;
+        case PYRAMID14:      lnodeIds = 14; break;
+        case POINT:          lnodeIds = 1;  break;
+        case QUADRILATERAL8: lnodeIds = 8;  break;
+        case HEXAHEDRON20:   lnodeIds = 20; break;
+        case PRISM15:        lnodeIds = 15; break;
+        case PYRAMID13:      lnodeIds = 13; break;
+        case TRIANGLE9:      lnodeIds = 19; break;
+        case TRIANGLE10:     lnodeIds = 10; break;
+        case TRIANGLE12:     lnodeIds = 12; break;
+        case TRIANGLE15:     lnodeIds = 15; break;
+        case TRIANGLE15_IC:  lnodeIds = 15; break;
+        case TRIANGLE21:     lnodeIds = 21; break;
+        case EDGE4:          lnodeIds = 4;  break;
+        case EDGE5:          lnodeIds = 5;  break;
+        case EDGE6:          lnodeIds = 6;  break;
+        case TETRAHEDRON20:  lnodeIds = 20; break;
+        case TETRAHEDRON35:  lnodeIds = 35; break;
+        case TETRAHEDRON56:  lnodeIds = 56; break;
+        case HEXAHEDRON64:   lnodeIds = 64; break;
+        case HEXAHEDRON125:  lnodeIds = 125;break;
 	default:
 		throw GmshReaderException("The elementTypeId "
                                   + std::to_string(elementType)
                                   + " is not implemented");
 	}
+    return lnodeIds;
 }
 
-void GmshReader::checkSupportedGmsh(float gmshVersion)
+void Reader::checkSupportedGmsh(float gmshVersion)
 {
     if (gmshVersion < 2.2)
         throw GmshReaderException("GmshVersion "
@@ -157,7 +168,7 @@ void GmshReader::checkSupportedGmsh(float gmshVersion)
                                   + " is not supported");
 }
 
-void GmshReader::writeMesh(const std::string& fileName)
+void Reader::writeMesh(const std::string& fileName)
 {
     std::ofstream file(fileName);
 
