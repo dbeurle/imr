@@ -5,27 +5,21 @@
 #include "GmshReader.hpp"
 
 #include <iostream>
+#include <iomanip>
 
 #include "GmshReaderException.hpp"
 
-#include <iomanip>
-
 namespace gmsh
 {
-Reader::Reader(const std::string& fileName)
+Reader::Reader(const std::string& fileName) : fileName(fileName)
 {
-    parse(fileName);
+    parse();
 }
 
-bool Reader::parse(const std::string& inputFileName)
+void Reader::parse()
 {
-    fileName = inputFileName;
-
     gmshFile.precision(sizeof(double));
-
-    this->fillMesh();
-
-    return true;
+    fillMesh();
 }
 
 void Reader::fillMesh()
@@ -163,17 +157,16 @@ int Reader::mapElementData(int elementType)
 void Reader::checkSupportedGmsh(float gmshVersion)
 {
     if (gmshVersion < 2.2)
-        throw GmshReaderException("GmshVersion "
-                                  + std::to_string(gmshVersion)
+        throw GmshReaderException("GmshVersion " + std::to_string(gmshVersion)
                                   + " is not supported");
 }
 
-void Reader::writeMesh(const std::string& fileName)
+void Reader::writeMesh(const std::string& outputFileName)
 {
-    std::ofstream file(fileName);
+    std::ofstream file(outputFileName);
 
     if(not file.is_open())
-        throw GmshReaderException("Failed to open " + fileName);
+        throw GmshReaderException("Failed to open " + outputFileName);
 
     int numElements = 0;
     for (const auto& physicalGroup : gmshMesh)
@@ -191,8 +184,6 @@ void Reader::writeMesh(const std::string& fileName)
         file << std::setw(10) << std::right << node.coordinates[2] << "\n";
     }
 
-
-
     for (const auto& pairNameAndElements : gmshMesh)
     {
         file << "Physical group \t" << pairNameAndElements.first << "\n";
@@ -205,13 +196,8 @@ void Reader::writeMesh(const std::string& fileName)
 
             file << "\n";
         }
-
      }
-
-
     file.close();
-
-
 }
 
 }

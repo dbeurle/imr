@@ -6,12 +6,11 @@
 
 #include <string>
 #include <vector>
-#include <valarray>
 #include <array>
 #include <fstream>
 #include <map>
 
-namespace neon
+namespace gmsh
 {
 struct ElementData
 {
@@ -39,7 +38,7 @@ struct NodeData
  * \brief Parses Gmsh format and returns the data structures of the mesh
  * in a format for neon to process
  */
-class GmshReader
+class Reader
 {
 public:
 
@@ -48,9 +47,10 @@ public:
 
 public:
 
-    GmshReader(const std::string& fileName);
+    /** Constructor that accepts a file name of the gmsh formatted mesh file */
+    Reader(const std::string& fileName);
 
-    ~GmshReader() = default;
+    ~Reader() = default;
 
     /** Gmsh element numbering scheme */
     enum ELEMENT_TYPE_ID {// Standard linear elements
@@ -89,9 +89,20 @@ public:
                           HEXAHEDRON64 = 92,
                           HEXAHEDRON125};
 
+    /**
+     * Return a map of the physical names and the element data.
+     * The physicalIds and the names are given by names().
+     * The value in the map is a list of ElementData objects
+     */
     const std::map<StringKey, Value>& mesh() const {return gmshMesh;}
 
-    void writeMesh(const std::string& fileName);
+    /** Return a list of the coordinates and Ids of the nodes */
+    const std::vector<NodeData>& nodes() const {return nodeList;}
+
+    /** Return the physical names associated with the mesh */
+    const std::map<int, std::string>& names() const {return physicalGroupMap;}
+
+    void writeMesh(const std::string& outputFileName);
 
 private:
 
@@ -99,9 +110,8 @@ private:
      * Parse the gmsh file as provided by the filename with the appended file
      * extension (.msh)
      * @param file name of the mesh to open
-     * @return true if the read was successful
      */
-     bool parse(const std::string& fileName);
+    void parse();
 
     /**
      * Provide a reference to the nodes and dimensions that will be populated
@@ -117,6 +127,7 @@ private:
      */
     void checkSupportedGmsh(float gmshVersion);
 
+    /** This method fills the datastructures \sa ElementData \sa NodeData */
     void fillMesh();
 
 private:
