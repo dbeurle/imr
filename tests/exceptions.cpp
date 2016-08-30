@@ -7,7 +7,6 @@ TEST_CASE( "Check for exceptions", "[exceptions]" )
 {
     SECTION( "Throw a GmshReaderException for invalid mesh files" )
     {
-        REQUIRE_THROWS_AS(neon::GmshReader reader("invalid_file_name"), GmshReaderException);
+        REQUIRE_THROWS_AS(gmsh::Reader reader("invalid_file_name"), GmshReaderException);
     }
-
 }
