@@ -109,7 +109,6 @@ private:
     /**
      * Parse the gmsh file as provided by the filename with the appended file
      * extension (.msh)
-     * @param file name of the mesh to open
      */
     void parse();
 
@@ -119,7 +118,7 @@ private:
      * @param Gmsh element number
      * @return elementType number of nodes per element
      */
-    int mapElementData(int elementType);
+    int mapElementData(int elementTypeId);
 
     /**
      * Check the version of gmsh is support otherwise print out a warning

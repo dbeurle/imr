@@ -83,15 +83,15 @@ void Reader::fillMesh()
             {
                 int id             = 0;
                 int numberOfTags   = 0;
-                int elementTypeNum = 0;
+                int elementTypeId  = 0;
 
-                gmshFile >> id >> elementTypeNum >> numberOfTags;
+                gmshFile >> id >> elementTypeId >> numberOfTags;
 
-                int numberOfNodes = mapElementData(elementTypeNum);
+                int numberOfNodes = mapElementData(elementTypeId);
 
                 ElementData elementData(numberOfNodes,
                                         numberOfTags,
-                                        elementTypeNum,
+                                        elementTypeId,
                                         id);
 
                 for (auto& tag : elementData.tags)
@@ -108,10 +108,10 @@ void Reader::fillMesh()
     gmshFile.close();
 }
 
-int Reader::mapElementData(int elementType)
+int Reader::mapElementData(int elementTypeId)
 {
     int lnodeIds = 0;
-	switch (elementType)
+	switch (elementTypeId)
 	{
         case LINE2:          lnodeIds = 2;  break;
         case TRIANGLE3:      lnodeIds = 3;  break;
@@ -148,7 +148,7 @@ int Reader::mapElementData(int elementType)
         case HEXAHEDRON125:  lnodeIds = 125;break;
 	default:
 		throw GmshReaderException("The elementTypeId "
-                                  + std::to_string(elementType)
+                                  + std::to_string(elementTypeId)
                                   + " is not implemented");
 	}
     return lnodeIds;
