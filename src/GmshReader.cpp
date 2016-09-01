@@ -6,7 +6,7 @@
 
 #include <iostream>
 #include <iomanip>
-
+#include <algorithm>
 #include "GmshReaderException.hpp"
 
 namespace gmsh
