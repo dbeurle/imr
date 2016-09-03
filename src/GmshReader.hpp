@@ -31,8 +31,8 @@ struct ElementData
                                           tags.begin() + 4 + *(tags.begin() + 3),
                                           [](auto a, auto b)
                                           {
-                                              return std::abs(a) < std::abs(b);}
-                                          ));
+                                              return std::abs(a) < std::abs(b);
+                                          }));
     }
     std::vector<int> tags;
     std::vector<int> nodalConnectivity;
