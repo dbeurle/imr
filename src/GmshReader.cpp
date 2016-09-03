@@ -6,7 +6,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <algorithm>
 #include "GmshReaderException.hpp"
 
 namespace gmsh
@@ -53,8 +52,8 @@ void Reader::fillMesh()
             gmshFile >> physicalIds;
             for (auto i = 0; i < physicalIds; ++i)
             {
-                int dimension   = 0;
-                int physicalId  = 0;
+                int dimension  = 0;
+                int physicalId = 0;
                 gmshFile >> dimension >> physicalId >> physicalName;
 
                 // Extract the name from the quotes
@@ -81,9 +80,9 @@ void Reader::fillMesh()
             gmshFile >> elementIds;
             for (int elementId = 0; elementId < elementIds; elementId++)
             {
-                int id             = 0;
-                int numberOfTags   = 0;
-                int elementTypeId  = 0;
+                int id            = 0;
+                int numberOfTags  = 0;
+                int elementTypeId = 0;
 
                 gmshFile >> id >> elementTypeId >> numberOfTags;
 
@@ -198,6 +197,18 @@ void Reader::writeMesh(const std::string& outputFileName)
         }
      }
     file.close();
+}
+
+void Reader::writeMurgeToJson() const
+{
+    // Find the total number of processes associated with the mesh
+    for (auto const& mesh : gmshMesh)
+    {
+        for (auto const& elementData : mesh.second)
+        {
+            std::cout << elementData.maxProcessId() << "\n";
+        }
+    }
 }
 
 }

@@ -6,6 +6,8 @@
 
 #include <string>
 #include <vector>
+#include <numeric>
+#include <iterator>
 #include <array>
 #include <fstream>
 #include <map>
@@ -14,16 +16,27 @@ namespace gmsh
 {
 struct ElementData
 {
-    ElementData(int numberOfNodes, int numberOfTags, int elementType, int id) :
+    ElementData(int numberOfNodes, int numberOfTags, int typeId, int id) :
         tags(numberOfTags, 0),
         nodalConnectivity(numberOfNodes, 0),
-        elementType(elementType),
+        typeId(typeId),
         id(id)
     {
     }
+
+    int maxProcessId() const
+    {
+        if (*tags.begin() == 2) return 1;
+        return std::abs(*std::max_element(tags.begin() + 4,
+                                          tags.begin() + 4 + *(tags.begin() + 3),
+                                          [](auto a, auto b)
+                                          {
+                                              return std::abs(a) < std::abs(b);}
+                                          ));
+    }
     std::vector<int> tags;
     std::vector<int> nodalConnectivity;
-    int elementType;
+    int typeId;
     int id;
 };
 
@@ -103,6 +116,15 @@ public:
     const std::map<int, std::string>& names() const {return physicalGroupMap;}
 
     void writeMesh(const std::string& outputFileName);
+
+    /**
+     * Write out a distributed mesh in the Murge format which requires a
+     * local to global mapping for the distributed matrices from a finite
+     * element discretization.  This involves performing a reordering of
+     * each of the element nodal connectivity arrays from the global view
+     * that gmsh outputs and the local processor view that Murge expects.
+     */
+    void writeMurgeToJson() const;
 
 private:
 
