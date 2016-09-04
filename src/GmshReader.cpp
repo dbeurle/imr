@@ -209,8 +209,6 @@ void Reader::writeMurgeToJson() const
     {
         std::map<StringKey, Value> processMesh;
 
-        std::cout << "Building process mesh..." << std::flush;
-
         for (auto const& mesh : gmshMesh)
         {
             for (auto const& element : mesh.second)
@@ -222,20 +220,11 @@ void Reader::writeMurgeToJson() const
                 }
             }
         }
-
-        std::cout << "done\nFilling the local to global mapping..." << std::flush;
-
         auto localToGlobalMapping = fillLocalMap(processMesh);
-
-        std::cout << "done\nFilling the local node list for this proc..." << std::flush;
 
         auto localNodes = fillLocalNodeList(localToGlobalMapping);
 
-        std::cout << "done\nReordering the local mesh..." << std::flush;
-
         reorderLocalMesh(processMesh, localToGlobalMapping);
-
-        std::cout << "done\nSorting the mesh..." << std::flush;
 
         // Sort the elements based on the elementTypeId to output grouped
         // meshes for contiguous storage in the FEM program
@@ -248,14 +237,11 @@ void Reader::writeMurgeToJson() const
                        });
         }
 
-        std::cout << "done.\nWriting to json format..." << std::flush;
-
         writeInJsonFormat( processMesh,
                            localToGlobalMapping,
                            localNodes,
                            processIds != 1 ? fileName+std::to_string(processId)+".mesh"
                                            : fileName+".mesh");
-        std::cout << "done!\n" << std::flush;
     }
 }
 
