@@ -209,6 +209,8 @@ void Reader::writeMurgeToJson() const
     {
         std::map<StringKey, Value> processMesh;
 
+        std::cout << "Building process mesh..." << std::flush;
+
         for (auto const& mesh : gmshMesh)
         {
             for (auto const& element : mesh.second)
@@ -221,11 +223,19 @@ void Reader::writeMurgeToJson() const
             }
         }
 
+        std::cout << "done\nFilling the local to global mapping..." << std::flush;
+
         auto localToGlobalMapping = fillLocalMap(processMesh);
+
+        std::cout << "done\nFilling the local node list for this proc..." << std::flush;
 
         auto localNodes = fillLocalNodeList(localToGlobalMapping);
 
+        std::cout << "done\nReordering the local mesh..." << std::flush;
+
         reorderLocalMesh(processMesh, localToGlobalMapping);
+
+        std::cout << "done\nSorting the mesh..." << std::flush;
 
         // Sort the elements based on the elementTypeId to output grouped
         // meshes for contiguous storage in the FEM program
@@ -237,11 +247,15 @@ void Reader::writeMurgeToJson() const
                            return a.typeId < b.typeId;
                        });
         }
+
+        std::cout << "done.\nWriting to json format..." << std::flush;
+
         writeInJsonFormat( processMesh,
                            localToGlobalMapping,
                            localNodes,
                            processIds != 1 ? fileName+std::to_string(processId)+".mesh"
                                            : fileName+".mesh");
+        std::cout << "done!\n" << std::flush;
     }
 }
 
@@ -274,9 +288,9 @@ void Reader::reorderLocalMesh( std::map<StringKey, Value>& processMesh,
         {
             for (auto& node : element.nodalConnectivity)
             {
-                auto found = std::find( localToGlobalMapping.begin(),
-                                        localToGlobalMapping.end(),
-                                        node);
+                auto found = std::lower_bound( localToGlobalMapping.begin(),
+                                               localToGlobalMapping.end(),
+                                               node);
                 // Reset the node value to that inside the
                 node = std::distance(localToGlobalMapping.begin(), found);
             }
