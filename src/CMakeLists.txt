@@ -1,3 +1,4 @@
 
 ADD_LIBRARY(GmshReader GmshReader.cpp)
+target_link_libraries(GmshReader jsoncpp_lib)
 TARGET_INCLUDE_DIRECTORIES(GmshReader PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

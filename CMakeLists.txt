@@ -1,6 +1,8 @@
 PROJECT(GmshReader CXX)
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
+find_package(jsoncpp REQUIRED)
+
 set(EXT_PROJECTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 add_subdirectory(${EXT_PROJECTS_DIR}/catch)
 include_directories(${CATCH_INCLUDE_DIR} ${COMMON_INCLUDES})

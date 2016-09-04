@@ -7,38 +7,15 @@
 #include <string>
 #include <vector>
 #include <numeric>
-#include <iterator>
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <map>
 
+#include "ElementData.hpp"
+
 namespace gmsh
 {
-struct ElementData
-{
-    ElementData(int numberOfNodes, int numberOfTags, int typeId, int id) :
-        tags(numberOfTags, 0),
-        nodalConnectivity(numberOfNodes, 0),
-        typeId(typeId),
-        id(id)
-    {
-    }
-
-    int maxProcessId() const
-    {
-        if (*tags.begin() == 2) return 1;
-        return std::abs(*std::max_element(tags.begin() + 4,
-                                          tags.begin() + 4 + *(tags.begin() + 3),
-                                          [](auto a, auto b)
-                                          {
-                                              return std::abs(a) < std::abs(b);
-                                          }));
-    }
-    std::vector<int> tags;
-    std::vector<int> nodalConnectivity;
-    int typeId;
-    int id;
-};
 
 struct NodeData
 {
@@ -151,6 +128,22 @@ private:
     /** This method fills the datastructures \sa ElementData \sa NodeData */
     void fillMesh();
 
+    /** Return the number of decompositions in the mesh */
+    int processIdsDecomposedMesh() const;
+
+    std::vector<int> fillLocalMap(std::map<StringKey, Value>& processMesh) const;
+
+    void reorderLocalMesh(std::map<StringKey, Value>& processMesh,
+                          std::vector<int> const& localToGlobalMapping) const;
+
+    std::vector<NodeData> fillLocalNodeList(std::vector<int> const& localToGlobalMapping) const;
+
+    void writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
+                            std::vector<int> const& localToGlobalMapping,
+                            std::vector<NodeData> const& nodalCoordinates,
+                            std::string const& filename,
+                            bool isZeroBased = true) const;
+
 private:
 
     std::map<StringKey, Value> gmshMesh;
@@ -162,4 +155,19 @@ private:
     std::fstream gmshFile;  //!< Hold an object to the file stream
 
 };
+
+inline int Reader::processIdsDecomposedMesh() const
+{
+    return std::accumulate(gmshMesh.begin(), gmshMesh.end(), 0,
+                           [](auto accumulator, auto const& mesh)
+                           {
+                               return std::max(accumulator, std::accumulate(mesh.second.begin(),
+                                                                            mesh.second.end(), 0,
+                                                                            [](auto acc, auto const& data)
+                                                                            {
+                                                                                return std::max(acc, data.maxProcessId());
+                                                                            }));
+                           });
+}
+
 }

@@ -4,7 +4,7 @@
 
 int main()
 {
-    gmsh::Reader reader("feti_beam.msh");
+    gmsh::Reader reader("basic.msh");
 
     reader.writeMurgeToJson();
 
