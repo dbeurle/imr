@@ -331,8 +331,6 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
         for (auto const& elementTypeId : elementTypeIds)
         {
             Json::Value elementGroup;
-            elementGroup["Type"] = elementTypeId;
-
             // Print out the lower and upper bounds of this particular typeId
             auto lower = std::lower_bound(mesh.second.begin(), mesh.second.end(),
                                           elementTypeId,
@@ -341,16 +339,17 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
                                           elementTypeId,
                                           [](auto a, auto b) {return a < b.typeId;});
 
-            Json::Value connectivity(Json::arrayValue);
             std::for_each(lower, upper, [&](auto const& element)
             {
+                Json::Value connectivity(Json::arrayValue);
                 for (auto const& nodeId : element.nodalConnectivity)
                 {
                     connectivity.append(nodeId);
                 }
+                elementGroup["NodalConnectivity"].append(connectivity);
             });
-            elementGroup["NodalConnectivity"].append(connectivity);
             elementGroup["Name"] = mesh.first;
+            elementGroup["Type"] = elementTypeId;
 
             event["Elements"]["Group"].append(elementGroup);
         }
