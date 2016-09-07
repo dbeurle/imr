@@ -236,12 +236,11 @@ void Reader::writeMurgeToJson() const
                            return a.typeId < b.typeId;
                        });
         }
-
         writeInJsonFormat( processMesh,
                            localToGlobalMapping,
                            localNodes,
-                           processIds != 1 ? fileName+std::to_string(processId)+".mesh"
-                                           : fileName+".mesh");
+                           processId,
+                           processIds > 1);
     }
 }
 
@@ -297,11 +296,17 @@ std::vector<NodeData> Reader::fillLocalNodeList(std::vector<int> const& localToG
 void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
                                 std::vector<int> const& localToGlobalMapping,
                                 std::vector<NodeData> const& nodalCoordinates,
-                                std::string const& filename,
+                                int processId,
+                                bool isDistributed,
                                 bool isZeroBased) const
 {
     // Write out each file to Json format
     Json::Value event;
+
+    std::string filename = fileName.substr(0, fileName.find_last_of("."))
+                         + ".mesh";
+    if (isDistributed)
+        filename += std::to_string(processId);
 
     std::fstream writer;
     writer.open(filename, std::ios::out);
@@ -354,12 +359,16 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
             event["Elements"]["Group"].append(elementGroup);
         }
     }
-
-    for (auto const& l2g : localToGlobalMapping)
+    if (isDistributed)
     {
-        event["LocalToGlobalMap"].append(isZeroBased ? l2g - 1 : l2g);
+        for (auto const& l2g : localToGlobalMapping)
+        {
+            event["LocalToGlobalMap"].append(isZeroBased ? l2g - 1 : l2g);
+        }
     }
-    writer << event;
+    Json::StyledWriter jsonwriter;
+    writer << jsonwriter.write(event);
+    //writer << event;
     writer.close();
 }
 

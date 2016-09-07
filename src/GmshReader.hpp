@@ -141,7 +141,8 @@ private:
     void writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
                             std::vector<int> const& localToGlobalMapping,
                             std::vector<NodeData> const& nodalCoordinates,
-                            std::string const& filename,
+                            int processId,
+                            bool isDistributed,
                             bool isZeroBased = true) const;
 
 private:
