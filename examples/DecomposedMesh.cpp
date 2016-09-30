@@ -4,7 +4,7 @@
 
 int main()
 {
-    gmsh::Reader reader("basic.msh");
+    gmsh::Reader reader("decomposed.msh");
     reader.writeMurgeToJson();
     std::cout << "Done!\n";
 }
