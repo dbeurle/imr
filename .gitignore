@@ -7,3 +7,7 @@ Makefile
 # Apple garbage
 *.DS_Store
 Makefile/
+# Binary files
+first_example
+# Any mesh files inside the example (they should be copied across)
+examples/*.msh
