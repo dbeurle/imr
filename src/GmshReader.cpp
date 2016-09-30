@@ -4,6 +4,11 @@
 
 #include "GmshReader.hpp"
 
+#include <numeric>
+#include <algorithm>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/numeric.hpp>
+
 #include <iostream>
 #include <iomanip>
 #include <json/json.h>
@@ -108,6 +113,17 @@ void Reader::fillMesh()
     gmshFile.close();
 }
 
+int Reader::processIdsDecomposedMesh() const
+{
+    return boost::accumulate(gmshMesh, 0, [](auto i, auto const& mesh)
+           {
+               return std::max(i, boost::accumulate(mesh.second, 0, [](auto j, auto const& data)
+                                  {
+                                      return std::max(j, data.maxProcessId());
+                                  }));
+           });
+}
+
 int Reader::mapElementData(int elementTypeId)
 {
     int lnodeIds = 0;
@@ -168,9 +184,7 @@ void Reader::writeMesh(const std::string& outputFileName)
     if(not file.is_open())
         throw GmshReaderException("Failed to open " + outputFileName);
 
-    int numElements = std::accumulate(gmshMesh.begin(), gmshMesh.end(), 0,
-                                      [](auto a, auto const& mesh)
-                                      {return a + mesh.second.size();});
+    int numElements = boost::accumulate(gmshMesh, 0, [](auto a, auto const& mesh){return a + mesh.second.size();});
 
     file << "numNodes    \t" << nodeList.size()     << "\n";
     file << "numElements \t" << numElements         << "\n";
@@ -230,11 +244,10 @@ void Reader::writeMurgeToJson() const
         // meshes for contiguous storage in the FEM program
         for (auto& mesh : processMesh)
         {
-            std::sort( mesh.second.begin(), mesh.second.end(),
-                       [](auto const& a, auto const& b)
-                       {
-                           return a.typeId < b.typeId;
-                       });
+            boost::sort(mesh.second, [](auto const& a, auto const& b)
+            {
+                return a.typeId < b.typeId;
+            });
         }
         writeInJsonFormat( processMesh,
                            localToGlobalMapping,
@@ -251,15 +264,12 @@ std::vector<int> Reader::fillLocalMap(std::map<StringKey, Value>& processMesh) c
     {
         for (auto const& element : mesh.second)
         {
-            std::copy( element.nodalConnectivity.begin(),
-                       element.nodalConnectivity.end(),
-                       std::back_inserter(localToGlobalMapping));
+            boost::copy(element.nodalConnectivity, std::back_inserter(localToGlobalMapping));
         }
     }
     // Sort and remove duplicates
-    std::sort(localToGlobalMapping.begin(), localToGlobalMapping.end());
-    localToGlobalMapping.erase( std::unique( localToGlobalMapping.begin(),
-                                             localToGlobalMapping.end()),
+    boost::sort(localToGlobalMapping);
+    localToGlobalMapping.erase( std::unique(localToGlobalMapping.begin(), localToGlobalMapping.end()),
                                 localToGlobalMapping.end());
     return localToGlobalMapping;
 }
@@ -273,9 +283,7 @@ void Reader::reorderLocalMesh( std::map<StringKey, Value>& processMesh,
         {
             for (auto& node : element.nodalConnectivity)
             {
-                auto found = std::lower_bound( localToGlobalMapping.begin(),
-                                               localToGlobalMapping.end(),
-                                               node);
+                auto found = boost::lower_bound(localToGlobalMapping, node);
                 // Reset the node value to that inside the
                 node = std::distance(localToGlobalMapping.begin(), found);
             }
@@ -305,8 +313,8 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
 
     std::string filename = fileName.substr(0, fileName.find_last_of("."))
                          + ".mesh";
-    if (isDistributed)
-        filename += std::to_string(processId);
+
+    if (isDistributed) filename += std::to_string(processId);
 
     std::fstream writer;
     writer.open(filename, std::ios::out);
@@ -329,20 +337,18 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
         {
             elementTypeIds.push_back(element.typeId);
         }
-        std::sort(elementTypeIds.begin(), elementTypeIds.end());
+        boost::sort(elementTypeIds);
         elementTypeIds.erase( std::unique(elementTypeIds.begin(), elementTypeIds.end()),
                               elementTypeIds.end());
 
         for (auto const& elementTypeId : elementTypeIds)
         {
             Json::Value elementGroup;
-            // Print out the lower and upper bounds of this particular typeId
-            auto lower = std::lower_bound(mesh.second.begin(), mesh.second.end(),
-                                          elementTypeId,
-                                          [](auto a, auto b) {return a.typeId < b;});
-            auto upper = std::upper_bound(mesh.second.begin(), mesh.second.end(),
-                                          elementTypeId,
-                                          [](auto a, auto b) {return a < b.typeId;});
+
+            auto lower = boost::lower_bound(mesh.second, elementTypeId,
+                                            [](auto a, auto b) {return a.typeId < b;});
+            auto upper = boost::upper_bound(mesh.second, elementTypeId,
+                                            [](auto a, auto b) {return a < b.typeId;});
 
             std::for_each(lower, upper, [&](auto const& element)
             {
@@ -356,7 +362,7 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
             elementGroup["Name"] = mesh.first;
             elementGroup["Type"] = elementTypeId;
 
-            event["Elements"]["Group"].append(elementGroup);
+            event["Elements"].append(elementGroup);
         }
     }
     if (isDistributed)
@@ -368,7 +374,6 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
     }
     Json::StyledWriter jsonwriter;
     writer << jsonwriter.write(event);
-    //writer << event;
     writer.close();
 }
 

@@ -6,8 +6,6 @@
 
 #include <string>
 #include <vector>
-#include <numeric>
-#include <algorithm>
 #include <array>
 #include <fstream>
 #include <map>
@@ -23,9 +21,8 @@ struct NodeData
     std::array<double, 3> coordinates;
 };
 
-/*!
- * \class GmshReader
- * \brief Parses Gmsh format and returns the data structures of the mesh
+/**
+ * Reader parses Gmsh format and returns the data structures of the mesh
  * in a format for neon to process
  */
 class Reader
@@ -156,19 +153,5 @@ private:
     std::fstream gmshFile;  //!< Hold an object to the file stream
 
 };
-
-inline int Reader::processIdsDecomposedMesh() const
-{
-    return std::accumulate(gmshMesh.begin(), gmshMesh.end(), 0,
-                           [](auto accumulator, auto const& mesh)
-                           {
-                               return std::max(accumulator, std::accumulate(mesh.second.begin(),
-                                                                            mesh.second.end(), 0,
-                                                                            [](auto acc, auto const& data)
-                                                                            {
-                                                                                return std::max(acc, data.maxProcessId());
-                                                                            }));
-                           });
-}
 
 }
