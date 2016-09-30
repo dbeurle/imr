@@ -1,0 +1,9 @@
+#CMake related files
+*.cmake
+CMakeFiles/
+Makefile
+# Static libraries
+*.a
+# Apple garbage
+*.DS_Store
+Makefile/
