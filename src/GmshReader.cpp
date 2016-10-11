@@ -107,8 +107,34 @@ void Reader::fillMesh()
 
                 int physicalId = elementData.tags[0];
                 gmshMesh[physicalGroupMap[physicalId]].push_back(elementData);
+
+                // check if the element is shared by multiple processes
+                if (elementData.tags[2] > 1)
+                {
+                    for (int i = 4; i < elementData.tags[2] + 3; ++i)
+                    {
+                        std::pair<int,int> ownership(elementData.tags[3], -elementData.tags[i]);
+                        if (interfaceElementMap.find(ownership) != interfaceElementMap.end())
+                        {
+                            for (auto const& nodeId : elementData.nodalConnectivity)
+                                interfaceElementMap[ownership].emplace(nodeId);
+
+                        }
+                        else
+                        {
+
+                            std::set<int> interfaceNodes(elementData.nodalConnectivity.begin(), elementData.nodalConnectivity.end());
+
+                            interfaceElementMap.emplace(ownership, interfaceNodes);
+                        }
+                    }
+
+                }
             }
         }
+
+
+
     }
     gmshFile.close();
 }
@@ -214,6 +240,7 @@ void Reader::writeMesh(const std::string& outputFileName)
     file.close();
 }
 
+
 void Reader::writeMurgeToJson() const
 {
     // Find the total number of processes associated with the mesh
@@ -238,7 +265,7 @@ void Reader::writeMurgeToJson() const
 
         auto localNodes = fillLocalNodeList(localToGlobalMapping);
 
-        reorderLocalMesh(processMesh, localToGlobalMapping);
+//        reorderLocalMesh(processMesh, localToGlobalMapping);  <-this messes up the NodalConnectivity
 
         // Sort the elements based on the elementTypeId to output grouped
         // meshes for contiguous storage in the FEM program
@@ -251,7 +278,7 @@ void Reader::writeMurgeToJson() const
         }
         writeInJsonFormat( processMesh,
                            localToGlobalMapping,
-                           localNodes,
+                           localNodes,                           
                            processId,
                            processIds > 1);
     }
@@ -319,15 +346,20 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
     std::fstream writer;
     writer.open(filename, std::ios::out);
 
+    Json::Value nodeGroup;
     for (auto const& node : nodalCoordinates)
     {
+
         Json::Value coordinates(Json::arrayValue);
         for (auto const& xyz : node.coordinates)
         {
             coordinates.append(Json::Value(xyz));
+
         }
-        event["Nodes"].append(coordinates);
+        nodeGroup["Coordinates"].append(coordinates);
+        nodeGroup["Indices"].append(isZeroBased ? node.id - 1 : node.id);
     }
+    event["Nodes"].append(nodeGroup);
 
     for (auto const& mesh : processMesh)
     {
@@ -358,6 +390,7 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
                     connectivity.append(nodeId);
                 }
                 elementGroup["NodalConnectivity"].append(connectivity);
+                elementGroup["Indices"].append(isZeroBased ? element.id - 1 : element.id);
             });
             elementGroup["Name"] = mesh.first;
             elementGroup["Type"] = elementTypeId;
@@ -371,6 +404,56 @@ void Reader::writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
         {
             event["LocalToGlobalMap"].append(isZeroBased ? l2g - 1 : l2g);
         }
+
+
+        int globalStartId = 0;
+        for (auto const& interface : interfaceElementMap)
+        {
+            const int masterId    = interface.first.first;
+            const int slaveId     = interface.first.second;
+
+            if (masterId < slaveId)
+            {
+
+                std::set<int> intersection;
+                const std::set<int>& v1 = interface.second;
+                const std::set<int>& v2 = interfaceElementMap.at(std::pair<int,int>(slaveId,masterId));
+
+                std::set_intersection(v1.begin(), v1.end(),
+                                      v2.begin(), v2.end(),
+                                      std::inserter(intersection, intersection.begin()));
+
+
+
+                if ((processId == masterId - 1 or processId == slaveId - 1))
+                {
+
+                    Json::Value interfaceGroup;
+                    Json::Value nodeIds;
+                    Json::Value globalIds;
+                    for (auto const& nodeId : intersection)
+                    {
+                        nodeIds.append(nodeId);
+
+                    }
+
+
+
+                    interfaceGroup["Master"].append(interface.first.first);
+                    interfaceGroup["Value"].append(processId == masterId -1 ? 1 : -1);
+                    interfaceGroup["Slave"].append(interface.first.second);
+                    interfaceGroup["NodeIds"].append(nodeIds);
+                    interfaceGroup["GlobalStartId"].append(globalStartId);
+
+                    event["Interface"].append(interfaceGroup);
+                }
+
+                globalStartId += intersection.size();
+            }
+        }
+
+    event["NumInterfaceNodes"].append(globalStartId);
+
     }
     Json::StyledWriter jsonwriter;
     writer << jsonwriter.write(event);

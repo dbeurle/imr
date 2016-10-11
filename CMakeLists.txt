@@ -1,13 +1,15 @@
 PROJECT(GmshReader CXX)
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
-find_package(jsoncpp REQUIRED)
-find_package(BOOST REQUIRED)
+find_package(Boost REQUIRED)
 include_directories(${BOOST_INCLUDE})
 
 set(EXT_PROJECTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 add_subdirectory(${EXT_PROJECTS_DIR}/catch)
 include_directories(${CATCH_INCLUDE_DIR} ${COMMON_INCLUDES})
+
+add_subdirectory(${EXT_PROJECTS_DIR}/jsoncpp)
+include_directories(${EXT_PROJECTS_DIR}/jsoncpp/dist/)
 
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
@@ -15,6 +17,12 @@ SET(GMSH_READER_LIBRARIES_INSTALL_PATH "lib")
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 OPTION(ENABLE_DEBUG "enables debug information" TRUE)
+option(ENABLE_COVERAGE "Set compiler flag for coverage analysis" FALSE)
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts ${CMAKE_MODULE_PATH})
+if(ENABLE_COVERAGE)
+    include(Coverage)
+endif()
 
 # set build type
 IF(ENABLE_DEBUG)

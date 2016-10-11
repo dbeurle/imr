@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <set>
 #include <fstream>
 #include <map>
 
@@ -140,12 +141,20 @@ private:
                             std::vector<NodeData> const& nodalCoordinates,
                             int processId,
                             bool isDistributed,
-                            bool isZeroBased = true) const;
+                            bool isZeroBased = false) const;
 
 private:
 
     std::map<StringKey, Value> gmshMesh;
     std::map<int, std::string> physicalGroupMap;
+    /**
+     * Key:
+     * pair.first:  process that owns the element
+     * pair.second: process that shares the element
+     * Value:       node ids of the interface element
+     *
+    */
+    std::map<std::pair<int,int>, std::set<int>> interfaceElementMap;
 
     std::vector<NodeData> nodeList;
 

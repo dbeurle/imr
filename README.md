@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/dbeurle/GmshReader.svg?branch=master)](https://travis-ci.org/dbeurle/GmshReader)
+[![Coverage Status](https://coveralls.io/repos/github/dbeurle/GmshReader/badge.svg?branch=master)](https://coveralls.io/github/dbeurle/GmshReader?branch=master)
 # GmshReader
 A reader for Gmsh files for processing serial and decomposed grids
 

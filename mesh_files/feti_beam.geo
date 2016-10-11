@@ -1,7 +1,7 @@
 
 
 num_partitions  = 3;
-mesh_size       = 1.0;
+mesh_size       = 0.25;
 
 
 // geometry

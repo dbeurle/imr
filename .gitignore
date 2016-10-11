@@ -1,5 +1,6 @@
 #CMake related files
-*.cmake
+#*.cmake
+CMakeLists.txt.user
 CMakeFiles/
 Makefile
 # Static libraries
@@ -10,4 +11,8 @@ Makefile/
 # Binary files
 first_example
 # Any mesh files inside the example (they should be copied across)
-examples/*.msh
+examples/
+# coverage data
+coverage.info
+
+
