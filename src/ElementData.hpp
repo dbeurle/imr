@@ -2,8 +2,6 @@
 #pragma once
 
 #include <vector>
-#include <numeric>
-#include <algorithm>
 
 namespace gmsh
 {
@@ -11,38 +9,20 @@ struct ElementData
 {
     ElementData(int numberOfNodes, int numberOfTags, int typeId, int id);
 
-    int maxProcessId() const
-    {
-        if (tags.size() == 2) return 1;
-        return std::abs(*std::max_element(std::next(tags.begin(), 3),
-                                          std::next(tags.begin(), 3+*(tags.begin()+2)),
-                                          [](auto a, auto b)
-                                          {
-                                              return std::abs(a) < std::abs(b);
-                                          }));
-    }
+    int maxProcessId() const;
 
-    bool isOwnedByProcess(int processId) const
-    {
-        if (tags.size() == 2) return true;
-        // Search the tags for the process value
-        auto procHead = std::next(tags.begin(), 3);
-        auto procTail = std::next(procHead, *(tags.begin()+2));
-        return std::find(procHead, procTail, processId) != procTail;
-    }
+    bool isOwnedByProcess(int processId) const;
 
-    std::vector<int> tags;
+    bool isSharedByMultipleProcesses() const {return tags[2] > 1;}
+
+    std::vector<int> tags;  // Position in tag array
+                            // 0 - Physical id
+                            // 1 - Geometrical id
+                            // 2 - Number of processes element belongs to
+                            // 3 - If tags[2] > 1 then owner
+                            // 4... - Ghost element processes (shared by processes)
     std::vector<int> nodalConnectivity;
     int typeId;
     int id;
 };
-
-inline ElementData::ElementData(int numberOfNodes, int numberOfTags, int typeId, int id) :
-    tags(numberOfTags, 0),
-    nodalConnectivity(numberOfNodes, 0),
-    typeId(typeId),
-    id(id)
-{
-}
-
 }
