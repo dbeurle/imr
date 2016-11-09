@@ -35,8 +35,11 @@ public:
 
 public:
 
-    /** Constructor that accepts a file name of the gmsh formatted mesh file */
-    Reader(const std::string& fileName);
+    /**
+     * Constructor that accepts a file name of the gmsh formatted mesh file
+     * and a flag to use zero based indexing in mesh output
+     */
+    Reader(const std::string& fileName, bool useZeroBasedIndexing = false);
 
     ~Reader() = default;
 
@@ -99,7 +102,7 @@ public:
      * each of the element nodal connectivity arrays from the global view
      * that gmsh outputs and the local processor view that Murge expects.
      */
-    void writeMurgeToJson() const;
+    void writeMeshToJson() const;
 
 private:
 
@@ -129,19 +132,20 @@ private:
     /** Return the number of decompositions in the mesh */
     int processIdsDecomposedMesh() const;
 
-    std::vector<int> fillLocalMap(std::map<StringKey, Value>& processMesh) const;
+    std::vector<int> fillLocalToGlobalMap(std::map<StringKey, Value>& processMesh) const;
 
+    /** Reorder the mesh to for each processor */
     void reorderLocalMesh(std::map<StringKey, Value>& processMesh,
                           std::vector<int> const& localToGlobalMapping) const;
 
+    /** Gather the local process nodes using the local to global mapping */
     std::vector<NodeData> fillLocalNodeList(std::vector<int> const& localToGlobalMapping) const;
 
     void writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
                             std::vector<int> const& localToGlobalMapping,
                             std::vector<NodeData> const& nodalCoordinates,
                             int processId,
-                            bool isDistributed,
-                            bool isZeroBased = false) const;
+                            bool isMeshDistributed) const;
 
 private:
 
@@ -153,13 +157,15 @@ private:
      * pair.second: process that shares the element
      * Value:       node ids of the interface element
      *
-    */
+     */
     std::map<std::pair<int,int>, std::set<int>> interfaceElementMap;
 
     std::vector<NodeData> nodeList;
 
     std::string fileName;   //!< File name of gmsh file
     std::fstream gmshFile;  //!< Hold an object to the file stream
+
+    bool useZeroBasedIndexing;
 
 };
 
