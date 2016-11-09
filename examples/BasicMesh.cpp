@@ -4,7 +4,7 @@
 
 int main()
 {
-    gmsh::Reader reader("basic.msh");
-    reader.writeMurgeToJson();
+    gmsh::Reader reader("basic.msh", true);
+    reader.writeMeshToJson();
     std::cout << "Done!\n";
 }

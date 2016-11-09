@@ -5,6 +5,6 @@
 int main()
 {
     gmsh::Reader reader("decomposed.msh");
-    reader.writeMurgeToJson();
+    reader.writeMeshToJson();
     std::cout << "Done!\n";
 }

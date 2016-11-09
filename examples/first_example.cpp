@@ -2,7 +2,7 @@
 #include "GmshReader.hpp"
 int main()
 {
-  gmsh::Reader reader("feti_beam_fine.msh");
-  reader.writeMurgeToJson();
-  std::cout << "This is my first example" << std::endl;
+    gmsh::Reader reader("feti_beam_fine.msh");
+    reader.writeMeshToJson();
+    std::cout << "This is my first example" << std::endl;
 }

@@ -3,6 +3,6 @@
 int main()
 {
   gmsh::Reader reader("threePointBending.msh");
-  reader.writeMurgeToJson();
+  reader.writeMeshToJson();
   std::cout << "Done!" << std::endl;
 }
