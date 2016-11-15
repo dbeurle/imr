@@ -11,5 +11,3 @@ foreach(test
     add_test(${test} ${CMAKE_CURRENT_BUILD_DIR}/${test})
     add_dependencies(${test} catch)
 endforeach()
-
-

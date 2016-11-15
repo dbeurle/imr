@@ -6,7 +6,6 @@
 
 int main()
 {
-    gmsh::Reader reader("basic.msh");
-
+    using namespace gmsh;
+    Reader reader("basic.msh", Reader::NodalOrdering::Global, Reader::IndexingBase::One);
 }
-
