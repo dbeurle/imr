@@ -1,11 +1,12 @@
 
-# copy mesh file to binary dir
+# Copy mesh file to binary dir
 configure_file(${CMAKE_SOURCE_DIR}/mesh_files/feti_beam_fine.msh ${CMAKE_CURRENT_BINARY_DIR})
 ADD_EXECUTABLE(first_example first_example.cpp)
 TARGET_LINK_LIBRARIES(first_example LINK_PUBLIC GmshReader)
 
 # Basic single mesh example
 configure_file(${CMAKE_SOURCE_DIR}/mesh_files/basic.msh ${CMAKE_CURRENT_BINARY_DIR})
+configure_file(${CMAKE_SOURCE_DIR}/mesh_files/cube.msh ${CMAKE_CURRENT_BINARY_DIR})
 add_executable(BasicMesh BasicMesh.cpp)
 target_link_libraries(BasicMesh LINK_PUBLIC GmshReader)
 

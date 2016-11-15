@@ -2,7 +2,10 @@
 #include "GmshReader.hpp"
 int main()
 {
-  gmsh::Reader reader("threePointBending.msh");
-  reader.writeMeshToJson();
-  std::cout << "Done!" << std::endl;
+    using namespace gmsh;
+    gmsh::Reader reader( "threePointBending.msh",
+                         Reader::NodalOrdering::Global,
+                         Reader::IndexingBase::One);
+    reader.writeMeshToJson();
+    std::cout << "Done!" << std::endl;
 }

@@ -2,7 +2,12 @@
 #include "GmshReader.hpp"
 int main()
 {
-    gmsh::Reader reader("feti_beam_fine.msh");
+    using namespace gmsh;
+
+    gmsh::Reader reader( "feti_beam_fine.msh",
+                         Reader::NodalOrdering::Local,
+                         Reader::IndexingBase::Zero);
     reader.writeMeshToJson();
+
     std::cout << "This is my first example" << std::endl;
 }
