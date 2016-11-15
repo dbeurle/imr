@@ -35,13 +35,8 @@ public:
 
 public:
 
-    /**
-     * Constructor that accepts a file name of the gmsh formatted mesh file
-     * and a flag to use zero based indexing in mesh output
-     */
-    Reader(const std::string& fileName, bool useZeroBasedIndexing = false);
-
-    ~Reader() = default;
+    enum class NodalOrdering {Local, Global};
+    enum class IndexingBase {Zero, One};
 
     /** Gmsh element numbering scheme */
     enum ELEMENT_TYPE_ID {// Standard linear elements
@@ -80,6 +75,20 @@ public:
                           HEXAHEDRON64 = 92,
                           HEXAHEDRON125};
 
+public:
+
+    /**
+     * @param File name of gmsh mesh
+     * @param Flag to use local processor ordering or retain global ordering.
+              If this is true, then each of the output meshes will have be ordered
+              locally and there will be a local to global mapping provided in the
+              the mesh file in addition to the nodal connectivity
+     * @param Flag for zero based indexing in nodal coordinates
+     */
+    Reader( std::string const& fileName, NodalOrdering, IndexingBase);
+
+    ~Reader() = default;
+
     /**
      * Return a map of the physical names and the element data.
      * The physicalIds and the names are given by names().
@@ -107,12 +116,6 @@ public:
 private:
 
     /**
-     * Parse the gmsh file as provided by the filename with the appended file
-     * extension (.msh)
-     */
-    void parse();
-
-    /**
      * Provide a reference to the nodes and dimensions that will be populated
      * with the correct data based on the elementType
      * @param Gmsh element number
@@ -130,8 +133,9 @@ private:
     void fillMesh();
 
     /** Return the number of decompositions in the mesh */
-    int processIdsDecomposedMesh() const;
+    int numberOfPartitions() const;
 
+    /** Return the local to global mapping for the nodal connectivities */
     std::vector<int> fillLocalToGlobalMap(std::map<StringKey, Value>& processMesh) const;
 
     /** Reorder the mesh to for each processor */
@@ -166,6 +170,7 @@ private:
     std::fstream gmshFile;  //!< Hold an object to the file stream
 
     bool useZeroBasedIndexing;
+    bool useLocalNodalConnectivity;
 
 };
 
