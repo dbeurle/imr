@@ -15,6 +15,8 @@ struct ElementData
 
     bool isSharedByMultipleProcesses() const {return tags[2] > 1;}
 
+    void convertToZeroBasedIndexing();
+
     std::vector<int> tags;  // Position in tag array
                             // 0 - Physical id
                             // 1 - Geometrical id
@@ -25,4 +27,11 @@ struct ElementData
     int typeId;
     int id;
 };
+
+inline void ElementData::convertToZeroBasedIndexing()
+{
+    for (auto& node : nodalConnectivity) --node;
+    --id;
+}
+
 }
