@@ -2,7 +2,11 @@
 #include "GmshReader.hpp"
 int main()
 {
-  gmsh::Reader reader("fourPointBending.msh");
-  reader.writeMurgeToJson();
-  std::cout << "Done!" << std::endl;
+    using namespace gmsh;
+    Reader reader( "fourPointBending.msh",
+                   Reader::NodalOrdering::Global,
+                   Reader::IndexingBase::One);
+
+    reader.writeMeshToJson();
+    std::cout << "Done!" << std::endl;
 }

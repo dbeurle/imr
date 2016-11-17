@@ -2,6 +2,7 @@
 foreach(mesh
     feti_beam_fine
     basic
+    cube
     decomposed
     fourPointBending
     2d_miehe_symmetric_three_point_bending

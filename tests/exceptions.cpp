@@ -7,6 +7,10 @@ TEST_CASE( "Check for exceptions", "[exceptions]" )
 {
     SECTION( "Throw a GmshReaderException for invalid mesh files" )
     {
-        REQUIRE_THROWS_AS(gmsh::Reader reader("invalid_file_name"), GmshReaderException);
+        using namespace gmsh;
+        REQUIRE_THROWS_AS(gmsh::Reader reader("invalid_file_name",
+                                              Reader::NodalOrdering::Global,
+                                              Reader::IndexingBase::One),
+                          GmshReaderException);
     }
 }

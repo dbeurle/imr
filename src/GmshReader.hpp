@@ -35,10 +35,8 @@ public:
 
 public:
 
-    /** Constructor that accepts a file name of the gmsh formatted mesh file */
-    Reader(const std::string& fileName);
-
-    ~Reader() = default;
+    enum class NodalOrdering {Local, Global};
+    enum class IndexingBase {Zero, One};
 
     /** Gmsh element numbering scheme */
     enum ELEMENT_TYPE_ID {// Standard linear elements
@@ -77,6 +75,20 @@ public:
                           HEXAHEDRON64 = 92,
                           HEXAHEDRON125};
 
+public:
+
+    /**
+     * @param File name of gmsh mesh
+     * @param Flag to use local processor ordering or retain global ordering.
+              If this is true, then each of the output meshes will have be ordered
+              locally and there will be a local to global mapping provided in the
+              the mesh file in addition to the nodal connectivity
+     * @param Flag for zero based indexing in nodal coordinates
+     */
+    Reader( std::string const& fileName, NodalOrdering, IndexingBase);
+
+    ~Reader() = default;
+
     /**
      * Return a map of the physical names and the element data.
      * The physicalIds and the names are given by names().
@@ -99,15 +111,9 @@ public:
      * each of the element nodal connectivity arrays from the global view
      * that gmsh outputs and the local processor view that Murge expects.
      */
-    void writeMurgeToJson() const;
+    void writeMeshToJson() const;
 
 private:
-
-    /**
-     * Parse the gmsh file as provided by the filename with the appended file
-     * extension (.msh)
-     */
-    void parse();
 
     /**
      * Provide a reference to the nodes and dimensions that will be populated
@@ -127,21 +133,23 @@ private:
     void fillMesh();
 
     /** Return the number of decompositions in the mesh */
-    int processIdsDecomposedMesh() const;
+    int numberOfPartitions() const;
 
-    std::vector<int> fillLocalMap(std::map<StringKey, Value>& processMesh) const;
+    /** Return the local to global mapping for the nodal connectivities */
+    std::vector<int> fillLocalToGlobalMap(std::map<StringKey, Value>& processMesh) const;
 
+    /** Reorder the mesh to for each processor */
     void reorderLocalMesh(std::map<StringKey, Value>& processMesh,
                           std::vector<int> const& localToGlobalMapping) const;
 
+    /** Gather the local process nodes using the local to global mapping */
     std::vector<NodeData> fillLocalNodeList(std::vector<int> const& localToGlobalMapping) const;
 
     void writeInJsonFormat( std::map<StringKey, Value> const& processMesh,
                             std::vector<int> const& localToGlobalMapping,
                             std::vector<NodeData> const& nodalCoordinates,
                             int processId,
-                            bool isDistributed,
-                            bool isZeroBased = false) const;
+                            bool isMeshDistributed) const;
 
 private:
 
@@ -153,13 +161,16 @@ private:
      * pair.second: process that shares the element
      * Value:       node ids of the interface element
      *
-    */
+     */
     std::map<std::pair<int,int>, std::set<int>> interfaceElementMap;
 
     std::vector<NodeData> nodeList;
 
     std::string fileName;   //!< File name of gmsh file
     std::fstream gmshFile;  //!< Hold an object to the file stream
+
+    bool useZeroBasedIndexing;
+    bool useLocalNodalConnectivity;
 
 };
 
