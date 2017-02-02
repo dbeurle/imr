@@ -147,114 +147,48 @@ int Reader::numberOfPartitions() const
 
 int Reader::mapElementData(int elementTypeId)
 {
-    int lnodes = 0;
+    // Return the number of local nodes per element
     switch (elementTypeId)
     {
-        case LINE2:
-            lnodes = 2;
-            break;
-        case TRIANGLE3:
-            lnodes = 3;
-            break;
-        case QUADRILATERAL4:
-            lnodes = 4;
-            break;
-        case TETRAHEDRON4:
-            lnodes = 4;
-            break;
-        case HEXAHEDRON8:
-            lnodes = 8;
-            break;
-        case PRISM6:
-            lnodes = 6;
-            break;
-        case PYRAMID5:
-            lnodes = 5;
-            break;
-        case LINE3:
-            lnodes = 3;
-            break;
-        case TRIANGLE6:
-            lnodes = 6;
-            break;
-        case QUADRILATERAL9:
-            lnodes = 9;
-            break;
-        case TETRAHEDRON10:
-            lnodes = 10;
-            break;
-        case HEXAHEDRON27:
-            lnodes = 27;
-            break;
-        case PRISM18:
-            lnodes = 18;
-            break;
-        case PYRAMID14:
-            lnodes = 14;
-            break;
-        case POINT:
-            lnodes = 1;
-            break;
-        case QUADRILATERAL8:
-            lnodes = 8;
-            break;
-        case HEXAHEDRON20:
-            lnodes = 20;
-            break;
-        case PRISM15:
-            lnodes = 15;
-            break;
-        case PYRAMID13:
-            lnodes = 13;
-            break;
-        case TRIANGLE9:
-            lnodes = 19;
-            break;
-        case TRIANGLE10:
-            lnodes = 10;
-            break;
-        case TRIANGLE12:
-            lnodes = 12;
-            break;
-        case TRIANGLE15:
-            lnodes = 15;
-            break;
-        case TRIANGLE15_IC:
-            lnodes = 15;
-            break;
-        case TRIANGLE21:
-            lnodes = 21;
-            break;
-        case EDGE4:
-            lnodes = 4;
-            break;
-        case EDGE5:
-            lnodes = 5;
-            break;
-        case EDGE6:
-            lnodes = 6;
-            break;
-        case TETRAHEDRON20:
-            lnodes = 20;
-            break;
-        case TETRAHEDRON35:
-            lnodes = 35;
-            break;
-        case TETRAHEDRON56:
-            lnodes = 56;
-            break;
-        case HEXAHEDRON64:
-            lnodes = 64;
-            break;
-        case HEXAHEDRON125:
-            lnodes = 125;
-            break;
+        case LINE2: return 2; break;
+        case TRIANGLE3: return 3; break;
+        case QUADRILATERAL4: return 4; break;
+        case TETRAHEDRON4: return 4; break;
+        case HEXAHEDRON8: return 8; break;
+        case PRISM6: return 6; break;
+        case PYRAMID5: return 5; break;
+        case LINE3: return 3; break;
+        case TRIANGLE6: return 6; break;
+        case QUADRILATERAL9: return 9; break;
+        case TETRAHEDRON10: return 10; break;
+        case HEXAHEDRON27: return 27; break;
+        case PRISM18: return 18; break;
+        case PYRAMID14: return 14; break;
+        case POINT: return 1; break;
+        case QUADRILATERAL8: return 8; break;
+        case HEXAHEDRON20: return 20; break;
+        case PRISM15: return 15; break;
+        case PYRAMID13: return 13; break;
+        case TRIANGLE9: return 19; break;
+        case TRIANGLE10: return 10; break;
+        case TRIANGLE12: return 12; break;
+        case TRIANGLE15: return 15; break;
+        case TRIANGLE15_IC: return 15; break;
+        case TRIANGLE21: return 21; break;
+        case EDGE4: return 4; break;
+        case EDGE5: return 5; break;
+        case EDGE6: return 6; break;
+        case TETRAHEDRON20: return 20; break;
+        case TETRAHEDRON35: return 35; break;
+        case TETRAHEDRON56: return 56; break;
+        case HEXAHEDRON64: return 64; break;
+        case HEXAHEDRON125: return 125; break;
         default:
             throw GmshReaderException("The elementTypeId " +
                                       std::to_string(elementTypeId) +
                                       " is not implemented");
     }
-    return lnodes;
+    return -1;
 }
 
 void Reader::checkSupportedGmsh(float gmshVersion)
