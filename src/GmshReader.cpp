@@ -109,8 +109,6 @@ void Reader::fillMesh()
 
                 if (elementData.isSharedByMultipleProcesses())
                 {
-                    std::cout << "I shouldn't be shared!!!!\n";
-                    std::abort();
                     for (int i = 4; i < elementData.tags[2] + 3; ++i)
                     {
                         std::pair<int, int> ownership(elementData.tags[3],
