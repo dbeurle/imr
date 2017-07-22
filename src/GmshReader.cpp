@@ -195,8 +195,8 @@ void Reader::checkSupportedGmsh(float gmshVersion)
 {
     if (gmshVersion < 2.2)
     {
-        throw GmshReaderException("GmshVersion " + std::to_string(gmshVersion) +
-                                  " is not supported");
+        throw std::runtime_error("GmshVersion " + std::to_string(gmshVersion) +
+                                 " is not supported");
     }
 }
 
