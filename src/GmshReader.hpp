@@ -115,8 +115,8 @@ private:
     /**
      * Provide a reference to the nodes and dimensions that will be populated
      * with the correct data based on the elementType
-     * @param Gmsh element number
-     * @return elementType number of nodes per element
+     * @param elementTypeId gmsh element number
+     * @return number of nodes for the element
      */
     int mapElementData(int elementTypeId);
 
