@@ -13,6 +13,7 @@ struct ElementData
 
     bool isOwnedByProcess(int processId) const;
 
+    /** @return true if this element is shared across multiple paritions */
     bool isSharedByMultipleProcesses() const { return tags.size() > 2 && tags[2] > 1; }
 
     void convertToZeroBasedIndexing();
