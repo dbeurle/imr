@@ -18,4 +18,4 @@ Gmsh specifies information tags and the nodal connectivity for each element.  Wh
 
 | 10 | 2 | 5 | 1 | 6 | 2 | 2 | -1 | 5 22 4 |
 | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| elementId | elementTypeId (Triangle3) | tags | physicalId | geometricalId | processes | owner | ghost | `nodalConnectivity` |
+| element # | element type (Triangle3) | tags | physical # | geometrical # | processes | owner | ghost | `nodalConnectivity` |
