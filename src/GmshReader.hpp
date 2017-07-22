@@ -92,15 +92,15 @@ public:
      * The physicalIds and the names are given by names().
      * The value in the map is a list of ElementData objects
      */
-    const std::map<StringKey, Value>& mesh() const { return gmshMesh; }
+    std::map<StringKey, Value> const& mesh() const { return gmshMesh; }
 
     /** Return a list of the coordinates and Ids of the nodes */
-    const std::vector<NodeData>& nodes() const { return nodeList; }
+    std::vector<NodeData> const& nodes() const { return nodeList; }
 
     /** Return the physical names associated with the mesh */
-    const std::map<int, std::string>& names() const { return physicalGroupMap; }
+    std::map<int, std::string> const& names() const { return physicalGroupMap; }
 
-    void writeMesh(const std::string& outputFileName);
+    void writeMesh(std::string const& outputFileName);
 
     /**
      * Write out a distributed mesh in the Murge format which requires a
