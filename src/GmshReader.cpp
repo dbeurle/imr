@@ -244,7 +244,7 @@ void Reader::writeMesh(const std::string& outputFileName)
     file.close();
 }
 
-void Reader::writeMeshToJson() const
+void Reader::writeMeshToJson(bool const printIndices) const
 {
     // Find the total number of partitions associated with the mesh
     int partitions = numberOfPartitions();
@@ -302,7 +302,8 @@ void Reader::writeMeshToJson() const
                           localToGlobalMapping,
                           localNodes,
                           partition,
-                          partitions > 1);
+                          partitions > 1,
+                          printIndices);
         std::cout << "Finished writing out JSON file for mesh partition " << partition
                   << "\n"
                   << std::flush;
@@ -363,7 +364,8 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
                                std::vector<int> const& localToGlobalMapping,
                                std::vector<NodeData> const& nodalCoordinates,
                                int processId,
-                               bool isMeshDistributed) const
+                               bool const isMeshDistributed,
+                               bool const printIndices) const
 {
     // Write out each file to Json format
     Json::Value event;
@@ -420,7 +422,7 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
                     connectivity.append(node);
                 }
                 elementGroup["NodalConnectivity"].append(connectivity);
-                elementGroup["Indices"].append(element.id());
+                if (printIndices) elementGroup["Indices"].append(element.id());
             });
 
             elementGroup["Name"] = mesh.first;

@@ -109,7 +109,7 @@ public:
      * each of the element nodal connectivity arrays from the global view
      * that gmsh outputs and the local processor view that Murge expects.
      */
-    void writeMeshToJson() const;
+    void writeMeshToJson(bool const printIndices = true) const;
 
     /** Return the number of decompositions in the mesh */
     int numberOfPartitions() const;
@@ -147,7 +147,8 @@ private:
                            std::vector<int> const& localToGlobalMapping,
                            std::vector<NodeData> const& nodalCoordinates,
                            int processId,
-                           bool isMeshDistributed) const;
+                           bool const isMeshDistributed,
+                           bool const printIndices) const;
 
 private:
     std::map<StringKey, Value> gmshMesh;
