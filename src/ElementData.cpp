@@ -33,8 +33,6 @@ ElementData::ElementData(std::vector<int> nodalConnectivity,
 
     m_isElementShared = tags.size() > 2;
 
-    m_maxProcessId = 1;
-
     if (m_isElementShared)
     {
         // Pull out the ending tags and populate the partitionTags vector

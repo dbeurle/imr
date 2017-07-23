@@ -16,28 +16,57 @@ TEST_CASE("Ensure exceptions are thrown", "[exceptions]")
                           GmshReaderException);
     }
 }
-TEST_CASE("Tests for serial ElementData", "[ElementData]")
+TEST_CASE("Tests for basic ElementData", "[ElementData]")
 {
-    // Setup the data arrays
-    std::vector<int> nodalConnectivity{1, 2, 3, 4};
-    std::vector<int> tags{2, 4};
+    // gmsh element line definition is
+    // 1 3 2 4 16 2 14 22 18
+    std::vector<int> nodalConnectivity{2, 14, 22, 18};
+    std::vector<int> tags{4, 16};
 
     constexpr auto id     = 1;
-    constexpr auto typeId = 4;
+    constexpr auto typeId = 3;
 
     ElementData elementData(nodalConnectivity, tags, typeId, id);
 
     SECTION("Data entry sanity check")
     {
-        REQUIRE(elementData.typeId() == typeId);
         REQUIRE(elementData.id() == id);
+        REQUIRE(elementData.typeId() == typeId);
         REQUIRE(elementData.nodalConnectivity().size() == nodalConnectivity.size());
-        REQUIRE(elementData.physicalId() == 2);
-        REQUIRE(elementData.geometricId() == 4);
+        REQUIRE(elementData.physicalId() == 4);
+        REQUIRE(elementData.geometricId() == 16);
+    }
+    SECTION("Check decomposition is disabled")
+    {
+        REQUIRE(!elementData.isSharedByMultipleProcesses());
+        REQUIRE(elementData.isOwnedByProcess(1));
+        REQUIRE(elementData.maxProcessId() == 1);
+        REQUIRE(elementData.partitionTags().empty());
+    }
+    SECTION("Check zero based indexing method")
+    {
+        elementData.convertToZeroBasedIndexing();
+        for (int i = 0; i < nodalConnectivity.size(); ++i)
+        {
+            REQUIRE(nodalConnectivity[i] - 1 == elementData.nodalConnectivity()[i]);
+        }
+        REQUIRE(elementData.id() == 0);
     }
 }
 TEST_CASE("Tests for decomposed ElementData", "[ElementData]")
 {
-    //
-    REQUIRE(1 == 1);
+    // 1 3 5 999 1 2 3 -4 402 233 450 197
+    constexpr auto id     = 1;
+    constexpr auto typeId = 3;
+    std::vector<int> nodalConnectivity{402, 233, 450, 197};
+    std::vector<int> tags{999, 1, 2, 3, -4};
+
+    ElementData elementData(nodalConnectivity, tags, typeId, id);
+
+    REQUIRE(elementData.partitionTags().size() == 3);
+
+    REQUIRE(elementData.isSharedByMultipleProcesses());
+
+    REQUIRE(elementData.isOwnedByProcess(2));
+    REQUIRE(elementData.maxProcessId() == 4);
 }

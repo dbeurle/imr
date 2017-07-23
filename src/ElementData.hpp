@@ -47,8 +47,9 @@ private:
     int m_geometricId;
     int m_typeId;
     int m_id;
-    int m_maxProcessId;
-    int m_processOwner;
+
+    int m_maxProcessId = 1;
+    int m_processOwner = 1;
 
     bool m_isElementShared = false;
 };
