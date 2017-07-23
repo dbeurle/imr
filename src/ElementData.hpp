@@ -36,6 +36,7 @@ public:
 
     std::vector<int> const& partitionTags() const { return m_partitionTags; }
 
+    /** Subtract one from each nodal connectivity index */
     void convertToZeroBasedIndexing();
 
 private:

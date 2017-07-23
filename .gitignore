@@ -14,5 +14,4 @@ first_example
 examples/
 # coverage data
 coverage.info
-
-
+build/
