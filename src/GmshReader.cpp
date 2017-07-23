@@ -212,14 +212,14 @@ void Reader::writeMesh(const std::string& outputFileName)
 
     if (not file.is_open()) throw GmshReaderException("Failed to open " + outputFileName);
 
-    int numElements = boost::accumulate(gmshMesh, 0, [](auto a, auto const& mesh) {
+    auto numElements = boost::accumulate(gmshMesh, 0, [](auto a, auto const& mesh) {
         return a + mesh.second.size();
     });
 
-    file << "numNodes    \t" << nodeList.size() << "\n";
-    file << "numElements \t" << numElements << "\n";
+    file << "numNodes   \t" << nodeList.size() << "\n";
+    file << "numElements\t" << numElements << "\n";
 
-    file << "Nodes \n";
+    file << "Nodes\n";
     for (const auto& node : nodeList)
     {
         file << std::setw(10) << std::right << node.id << "\t";
@@ -230,8 +230,8 @@ void Reader::writeMesh(const std::string& outputFileName)
 
     for (const auto& pairNameAndElements : gmshMesh)
     {
-        file << "Physical group \t" << pairNameAndElements.first << "\n";
-        file << "Elements \n";
+        file << "Physical group\t" << pairNameAndElements.first << "\n";
+        file << "Elements\n";
         for (const auto& element : pairNameAndElements.second)
         {
             file << std::setw(10) << std::right << element.id() << "\t";
