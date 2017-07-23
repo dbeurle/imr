@@ -3,16 +3,16 @@
  */
 
 #include "GmshReader.hpp"
+#include "GmshReaderException.hpp"
 
 #include <algorithm>
 #include <boost/container/flat_set.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/numeric.hpp>
-#include <numeric>
-
-#include "GmshReaderException.hpp"
 #include <iomanip>
 #include <iostream>
+#include <numeric>
+
 #include <json/json.h>
 
 namespace gmsh
