@@ -111,6 +111,9 @@ public:
      */
     void writeMeshToJson() const;
 
+    /** Return the number of decompositions in the mesh */
+    int numberOfPartitions() const;
+
 private:
     /**
      * Provide a reference to the nodes and dimensions that will be populated
@@ -128,9 +131,6 @@ private:
 
     /** This method fills the datastructures \sa ElementData \sa NodeData */
     void fillMesh();
-
-    /** Return the number of decompositions in the mesh */
-    int numberOfPartitions() const;
 
     /** Return the local to global mapping for the nodal connectivities */
     std::vector<int> fillLocalToGlobalMap(std::map<StringKey, Value>& processMesh) const;
