@@ -1,7 +1,9 @@
 [![Build Status](https://travis-ci.org/dbeurle/GmshReader.svg?branch=master)](https://travis-ci.org/dbeurle/GmshReader)
 [![Coverage Status](https://coveralls.io/repos/github/dbeurle/GmshReader/badge.svg?branch=master)](https://coveralls.io/github/dbeurle/GmshReader?branch=master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # GmshReader
+
 A reader for Gmsh files for processing serial and decomposed grids.  This project is a command line interface (CLI) program and is designed to perform the off-line conversion of serial and decomposed grids into separate `JSON` mesh files.  These files can be readily imported into a numerical analysis program using `JSON` readers avoiding dealing with the  format of `.msh` files.
 
 ![alt text](https://github.com/dbeurle/GmshReader/blob/master/doc/images/feti.png "FETI example")
@@ -20,3 +22,7 @@ Gmsh specifies information tags and the nodal connectivity for each element.  Wh
 | 10 | 2 | 5 | 1 | 6 | 2 | 2 | -1 | 5 22 4 |
 | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | element # | element type (Triangle3) | tags | physical # | geometrical # | processes | owner | ghost | `nodalConnectivity` |
+
+# Usage
+
+Examples of usage are available in the project directory `examples`.  Work is underway to include a command line interface.
