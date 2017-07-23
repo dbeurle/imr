@@ -1,5 +1,6 @@
 
 execute_process(COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE_DIR}/mesh_files/basic.msh" "${CMAKE_CURRENT_BINARY_DIR}/basic.msh")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE_DIR}/mesh_files/decomposed.msh" "${CMAKE_CURRENT_BINARY_DIR}/decomposed.msh")
 
 # generate tests
 foreach(test exceptions)

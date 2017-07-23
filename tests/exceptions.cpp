@@ -2,6 +2,7 @@
                           // cpp file
 #include "GmshReader.hpp"
 #include "GmshReaderException.hpp"
+
 #include <catch.hpp>
 
 using namespace gmsh;
@@ -69,4 +70,23 @@ TEST_CASE("Tests for decomposed ElementData", "[ElementData]")
 
     REQUIRE(elementData.isOwnedByProcess(2));
     REQUIRE(elementData.maxProcessId() == 4);
+}
+TEST_CASE("Tests for Reader")
+{
+    Reader reader("decomposed.msh",
+                  Reader::NodalOrdering::Local,
+                  Reader::IndexingBase::Zero);
+
+    REQUIRE(reader.numberOfPartitions() == 4);
+
+    // Check the physical names are in the map
+    REQUIRE(reader.names().find(1) != reader.names().end());
+    REQUIRE(reader.names().find(2) != reader.names().end());
+
+    REQUIRE(reader.names().find(1)->second == "domain");
+    REQUIRE(reader.names().find(2)->second == "left_boundary");
+
+    REQUIRE(reader.nodes().size() == 121);
+
+    reader.writeMeshToJson(false);
 }
