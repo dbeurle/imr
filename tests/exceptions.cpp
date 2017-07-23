@@ -16,15 +16,28 @@ TEST_CASE("Ensure exceptions are thrown", "[exceptions]")
                           GmshReaderException);
     }
 }
-TEST_CASE("Test suite for ElementData", "[ElementData]")
+TEST_CASE("Tests for serial ElementData", "[ElementData]")
 {
     // Setup the data arrays
-    ElementData elementData(4, 3, 4, 1);
+    std::vector<int> nodalConnectivity{1, 2, 3, 4};
+    std::vector<int> tags{2, 4};
+
+    constexpr auto id     = 1;
+    constexpr auto typeId = 4;
+
+    ElementData elementData(nodalConnectivity, tags, typeId, id);
 
     SECTION("Data entry sanity check")
     {
-        REQUIRE(elementData.typeId == 4);
-        REQUIRE(elementData.id == 1);
-        REQUIRE(elementData.nodalConnectivity.size() == 4);
+        REQUIRE(elementData.typeId() == typeId);
+        REQUIRE(elementData.id() == id);
+        REQUIRE(elementData.nodalConnectivity().size() == nodalConnectivity.size());
+        REQUIRE(elementData.physicalId() == 2);
+        REQUIRE(elementData.geometricId() == 4);
     }
+}
+TEST_CASE("Tests for decomposed ElementData", "[ElementData]")
+{
+    //
+    REQUIRE(1 == 1);
 }

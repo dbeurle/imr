@@ -86,44 +86,50 @@ void Reader::fillMesh()
         {
             int elementIds = 0;
             gmshFile >> elementIds;
+
             for (int elementId = 0; elementId < elementIds; elementId++)
             {
                 int id = 0, numberOfTags = 0, elementTypeId = 0;
 
                 gmshFile >> id >> elementTypeId >> numberOfTags;
 
-                int numberOfNodes = mapElementData(elementTypeId);
+                auto const numberOfNodes = mapElementData(elementTypeId);
 
-                ElementData elementData(numberOfNodes, numberOfTags, elementTypeId, id);
+                std::vector<int> tags(numberOfTags, 0);
+                std::vector<int> nodalConnectivity(numberOfNodes, 0);
 
-                for (auto& tag : elementData.tags)
+                for (auto& tag : tags)
                 {
                     gmshFile >> tag;
                 }
-                for (auto& nodeId : elementData.nodalConnectivity)
+                for (auto& nodeId : nodalConnectivity)
                 {
                     gmshFile >> nodeId;
                 }
-                int physicalId = elementData.tags[0];
+
+                auto const physicalId = tags[0];
+
+                ElementData elementData(nodalConnectivity, tags, elementTypeId, id);
+
                 gmshMesh[physicalGroupMap[physicalId]].push_back(elementData);
 
                 if (elementData.isSharedByMultipleProcesses())
                 {
-                    for (int i = 4; i < elementData.tags[2] + 3; ++i)
+                    for (int i = 4; i < tags[2] + 3; ++i)
                     {
-                        std::pair<int, int> ownership(elementData.tags[3],
-                                                      -elementData.tags[i]);
+                        auto const ownership = std::make_pair(tags[3], -tags[i]);
+
                         if (interfaceElementMap.find(ownership) !=
                             interfaceElementMap.end())
                         {
-                            for (auto const& nodeId : elementData.nodalConnectivity)
+                            for (auto const& nodeId : elementData.nodalConnectivity())
                                 interfaceElementMap[ownership].emplace(nodeId);
                         }
                         else
                         {
                             std::set<int> interfaceNodes(
-                                elementData.nodalConnectivity.begin(),
-                                elementData.nodalConnectivity.end());
+                                elementData.nodalConnectivity().begin(),
+                                elementData.nodalConnectivity().end());
 
                             interfaceElementMap.emplace(ownership, interfaceNodes);
                         }
@@ -228,8 +234,8 @@ void Reader::writeMesh(const std::string& outputFileName)
         file << "Elements \n";
         for (const auto& element : pairNameAndElements.second)
         {
-            file << std::setw(10) << std::right << element.id << "\t";
-            for (const auto& nodeId : element.nodalConnectivity)
+            file << std::setw(10) << std::right << element.id() << "\t";
+            for (const auto& nodeId : element.nodalConnectivity())
                 file << std::setw(10) << std::right << nodeId << "\t";
 
             file << "\n";
@@ -271,8 +277,9 @@ void Reader::writeMeshToJson() const
         // meshes for contiguous storage
         for (auto& mesh : localProcessMesh)
         {
-            boost::sort(mesh.second,
-                        [](auto const& a, auto const& b) { return a.typeId < b.typeId; });
+            boost::sort(mesh.second, [](auto const& a, auto const& b) {
+                return a.typeId() < b.typeId();
+            });
         }
 
         // Check if this local mesh needs to be converted to zero based indexing
@@ -310,7 +317,7 @@ Reader::fillLocalToGlobalMap(std::map<StringKey, Value>& localProcessMesh) const
     {
         for (auto const& element : mesh.second)
         {
-            boost::copy(element.nodalConnectivity,
+            boost::copy(element.nodalConnectivity(),
                         std::back_inserter(localToGlobalMapping));
         }
     }
@@ -329,7 +336,7 @@ void Reader::reorderLocalMesh(std::map<StringKey, Value>& localProcessMesh,
     {
         for (auto& element : mesh.second)
         {
-            for (auto& node : element.nodalConnectivity)
+            for (auto& node : element.nodalConnectivity())
             {
                 auto found = boost::lower_bound(localToGlobalMapping, node);
 
@@ -385,10 +392,10 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
     for (auto const& mesh : localProcessMesh)
     {
         // Find all of the unique elementTypeIds
-        boost::container::flat_set<int> elementTypeIds;
+        std::set<int> elementTypeIds;
         for (auto const& element : mesh.second)
         {
-            elementTypeIds.insert(element.typeId);
+            elementTypeIds.insert(element.typeId());
         }
 
         // Add in each of the element type groups into the json object
@@ -397,21 +404,23 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
             Json::Value elementGroup;
 
             // Find the elements which are of the element type in the local mesh
-            auto lower = boost::lower_bound(mesh.second,
-                                            elementTypeId,
-                                            [](auto a, auto b) { return a.typeId < b; });
-            auto upper = boost::upper_bound(mesh.second,
-                                            elementTypeId,
-                                            [](auto a, auto b) { return a < b.typeId; });
+            auto lower =
+                boost::lower_bound(mesh.second, elementTypeId, [](auto a, auto b) {
+                    return a.typeId() < b;
+                });
+            auto upper =
+                boost::upper_bound(mesh.second, elementTypeId, [](auto a, auto b) {
+                    return a < b.typeId();
+                });
 
             std::for_each(lower, upper, [&](auto const& element) {
                 Json::Value connectivity(Json::arrayValue);
-                for (auto const& node : element.nodalConnectivity)
+                for (auto const& node : element.nodalConnectivity())
                 {
                     connectivity.append(node);
                 }
                 elementGroup["NodalConnectivity"].append(connectivity);
-                elementGroup["Indices"].append(element.id);
+                elementGroup["Indices"].append(element.id());
             });
 
             elementGroup["Name"] = mesh.first;
