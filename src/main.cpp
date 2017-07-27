@@ -17,13 +17,15 @@ int main(int argc, char* argv[])
         po::options_description visible("Options");
 
         visible.add_options()("help", "Print help messages");
-        visible.add_options()("zero-based",
-                              "Use zero based indexing for elements and nodes");
+        visible.add_options()(
+            "zero-based",
+            "Use zero based indexing for elements and nodes.  Default: one-based.");
         visible.add_options()("local-ordering",
                               "For distributed meshes, each processor has local indexing "
-                              "and a local to global mapping");
+                              "and a local to global mapping.  Default: global-ordering");
         visible.add_options()("with-indices",
-                              "Write out extra indices (results in file size increase)");
+                              "Write out extra indices (results in file size increase).  "
+                              "Default without-indices");
 
         po::options_description hidden("Hidden options");
 
