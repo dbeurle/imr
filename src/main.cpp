@@ -67,11 +67,11 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        Reader::IndexingBase indexing = vm.count("zero-based") > 1
+        Reader::IndexingBase indexing = vm.count("zero-based") > 0
                                             ? Reader::IndexingBase::Zero
                                             : Reader::IndexingBase::One;
 
-        Reader::NodalOrdering ordering = vm.count("local-ordering") > 1
+        Reader::NodalOrdering ordering = vm.count("local-ordering") > 0
                                              ? Reader::NodalOrdering::Local
                                              : Reader::NodalOrdering::Global;
 
