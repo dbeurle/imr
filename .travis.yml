@@ -21,4 +21,4 @@ script:
     - make -j2
     - ctest
 after_success:
-    - if [[ "$CXX" =~ ^g.* ]]; then ls && cd build && ls && coveralls --lcov-file coverage.info -n ; fi
+    - if [[ "$CXX" =~ ^g.* ]]; then make coverage && coveralls --lcov-file coverage.info --no-gcov ; fi
