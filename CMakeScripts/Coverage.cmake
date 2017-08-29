@@ -9,6 +9,4 @@ add_custom_target(coverage
         COMMAND lcov --capture --directory ${CMAKE_BINARY_DIR} --output-file coverage.info
         COMMAND lcov -r coverage.info '/usr/include/*' -o coverage.info
         COMMAND lcov -r coverage.info 'build/catch/*' -o coverage.info
-        COMMAND lcov -r coverage.info 'external/*' -o coverage.info
-        COMMAND genhtml coverage.info --output-directory coverageOutput
-        COMMAND xdg-open coverageOutput/index.html)
+        COMMAND lcov -r coverage.info 'external/*' -o coverage.info)
