@@ -27,12 +27,16 @@ Gmsh specifies information tags and the nodal connectivity for each element.  Wh
 | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | element # | element type (Triangle3) | tags | physical # | geometrical # | processes | owner | ghost | `nodalConnectivity` |
 
+GmshReader parses the file and splits the elements into groups based on their element type.  If the mesh contains partitions, then these are split into separate files so each processor can read in their respective mesh partition without parsing the original file.
+
 # Usage
 
 Examples of usage are available in the project directory `examples`.  There is also a command line interface with the list of command line options given by executing
+
+* `gmshreader --help`
 
 # Issues
 
 If there are any issues in using the program, please open an issue using the GitHub tool above.  Bug reports, suggestions and improvements are very welcome!
 
-* `gmshreader --help`
+
