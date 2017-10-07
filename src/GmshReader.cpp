@@ -9,6 +9,7 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/numeric.hpp>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -28,6 +29,8 @@ Reader::Reader(std::string const& fileName, NodalOrdering ordering, IndexingBase
 
 void Reader::fillMesh()
 {
+    auto const start = std::chrono::high_resolution_clock::now();
+
     gmshFile.open(fileName.c_str());
 
     if (!gmshFile.is_open())
@@ -111,7 +114,12 @@ void Reader::fillMesh()
 
                 ElementData elementData(nodalConnectivity, tags, elementTypeId, id);
 
+                // Update the total number of partitions on the fly
+                number_of_partitions = std::max(elementData.maxProcessId(), number_of_partitions);
+
                 gmshMesh[physicalGroupMap[physicalId]].push_back(elementData);
+
+                meshes[{physicalGroupMap[physicalId], elementTypeId}].push_back(elementData);
 
                 if (elementData.isSharedByMultipleProcesses())
                 {
@@ -119,17 +127,17 @@ void Reader::fillMesh()
                     {
                         auto const ownership = std::make_pair(tags[3], -tags[i]);
 
-                        if (interfaceElementMap.find(ownership) !=
-                            interfaceElementMap.end())
+                        if (interfaceElementMap.find(ownership) != interfaceElementMap.end())
                         {
                             for (auto const& nodeId : elementData.nodalConnectivity())
+                            {
                                 interfaceElementMap[ownership].emplace(nodeId);
+                            }
                         }
                         else
                         {
-                            std::set<int> interfaceNodes(
-                                elementData.nodalConnectivity().begin(),
-                                elementData.nodalConnectivity().end());
+                            std::set<int> interfaceNodes(elementData.nodalConnectivity().begin(),
+                                                         elementData.nodalConnectivity().end());
 
                             interfaceElementMap.emplace(ownership, interfaceNodes);
                         }
@@ -139,19 +147,14 @@ void Reader::fillMesh()
         }
     }
     gmshFile.close();
+
+    auto const end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    std::cout << "Mesh data structure filled in " << elapsed_seconds.count() << "s\n";
 }
 
-int Reader::numberOfPartitions() const
-{
-    return boost::accumulate(gmshMesh, 0, [](auto i, auto const& mesh) {
-        return std::max(i,
-                        boost::accumulate(mesh.second, 0, [](auto j, auto const& data) {
-                            return std::max(j, data.maxProcessId());
-                        }));
-    });
-}
-
-int Reader::mapElementData(int elementTypeId)
+int Reader::mapElementData(int const elementTypeId)
 {
     // Return the number of local nodes per element
     switch (elementTypeId)
@@ -190,14 +193,13 @@ int Reader::mapElementData(int elementTypeId)
         case HEXAHEDRON64: return 64; break;
         case HEXAHEDRON125: return 125; break;
         default:
-            throw GmshReaderException("The elementTypeId " +
-                                      std::to_string(elementTypeId) +
+            throw GmshReaderException("The elementTypeId " + std::to_string(elementTypeId) +
                                       " is not implemented");
     }
     return -1;
 }
 
-void Reader::checkSupportedGmsh(float gmshVersion)
+void Reader::checkSupportedGmsh(float const gmshVersion)
 {
     if (gmshVersion < 2.2)
     {
@@ -206,52 +208,13 @@ void Reader::checkSupportedGmsh(float gmshVersion)
     }
 }
 
-void Reader::writeMesh(const std::string& outputFileName)
-{
-    std::ofstream file(outputFileName);
-
-    if (not file.is_open()) throw GmshReaderException("Failed to open " + outputFileName);
-
-    auto numElements = boost::accumulate(gmshMesh, 0, [](auto a, auto const& mesh) {
-        return a + mesh.second.size();
-    });
-
-    file << "numNodes   \t" << nodeList.size() << "\n";
-    file << "numElements\t" << numElements << "\n";
-
-    file << "Nodes\n";
-    for (const auto& node : nodeList)
-    {
-        file << std::setw(10) << std::right << node.id << "\t";
-        file << std::setw(10) << std::right << node.coordinates[0] << "\t";
-        file << std::setw(10) << std::right << node.coordinates[1] << "\t";
-        file << std::setw(10) << std::right << node.coordinates[2] << "\n";
-    }
-
-    for (const auto& pairNameAndElements : gmshMesh)
-    {
-        file << "Physical group\t" << pairNameAndElements.first << "\n";
-        file << "Elements\n";
-        for (const auto& element : pairNameAndElements.second)
-        {
-            file << std::setw(10) << std::right << element.id() << "\t";
-            for (const auto& nodeId : element.nodalConnectivity())
-                file << std::setw(10) << std::right << nodeId << "\t";
-
-            file << "\n";
-        }
-    }
-    file.close();
-}
-
 void Reader::writeMeshToJson(bool const printIndices) const
 {
-    // Find the total number of partitions associated with the mesh
-    int partitions = numberOfPartitions();
-
-    for (auto partition = 0; partition < partitions; ++partition)
+    for (auto partition = 0; partition < number_of_partitions; ++partition)
     {
         std::map<StringKey, Value> localProcessMesh;
+
+        Mesh process_mesh;
 
         for (auto const& mesh : gmshMesh)
         {
@@ -265,8 +228,25 @@ void Reader::writeMeshToJson(bool const printIndices) const
             }
         }
 
+        // Find all of the elements which belong to this process
+        for (auto const& mesh : meshes)
+        {
+            auto const mesh_key = mesh.first;
+            std::cout << "Searching " << mesh_key.first << std::endl;
+            for (auto const& element : mesh.second)
+            {
+                if (element.isOwnedByProcess(partition + 1))
+                {
+                    // Copy the elements into the process mesh
+                    process_mesh[mesh.first].push_back(element);
+                }
+            }
+        }
+
         auto localToGlobalMapping = fillLocalToGlobalMap(localProcessMesh);
-        auto localNodes           = fillLocalNodeList(localToGlobalMapping);
+        auto local_global_mapping = fillLocalToGlobalMap(process_mesh);
+
+        auto localNodes = fillLocalNodeList(localToGlobalMapping);
 
         if (useLocalNodalConnectivity)
         {
@@ -277,9 +257,8 @@ void Reader::writeMeshToJson(bool const printIndices) const
         // meshes for contiguous storage
         for (auto& mesh : localProcessMesh)
         {
-            boost::sort(mesh.second, [](auto const& a, auto const& b) {
-                return a.typeId() < b.typeId();
-            });
+            boost::sort(mesh.second,
+                        [](auto const& a, auto const& b) { return a.typeId() < b.typeId(); });
         }
 
         // Check if this local mesh needs to be converted to zero based indexing
@@ -302,26 +281,48 @@ void Reader::writeMeshToJson(bool const printIndices) const
                           localToGlobalMapping,
                           localNodes,
                           partition,
-                          partitions > 1,
+                          number_of_partitions > 1,
                           printIndices);
-        std::cout << "Finished writing out JSON file for mesh partition " << partition
-                  << "\n"
+
+        std::cout << std::string(2, ' ') << "Finished writing out JSON file for mesh partition "
+                  << partition << "\n"
                   << std::flush;
     }
 }
 
 std::vector<int>
-Reader::fillLocalToGlobalMap(std::map<StringKey, Value>& localProcessMesh) const
+Reader::fillLocalToGlobalMap(std::map<StringKey, Value> const& localProcessMesh) const
 {
     std::vector<int> localToGlobalMapping;
-    for (auto& mesh : localProcessMesh)
+
+    for (auto const& mesh : localProcessMesh)
     {
         for (auto const& element : mesh.second)
         {
-            boost::copy(element.nodalConnectivity(),
-                        std::back_inserter(localToGlobalMapping));
+            boost::copy(element.nodalConnectivity(), std::back_inserter(localToGlobalMapping));
         }
     }
+
+    // Sort and remove duplicates
+    boost::sort(localToGlobalMapping);
+    localToGlobalMapping.erase(std::unique(localToGlobalMapping.begin(),
+                                           localToGlobalMapping.end()),
+                               localToGlobalMapping.end());
+    return localToGlobalMapping;
+}
+
+std::vector<int> fillLocalToGlobalMap(Mesh const& process_mesh) const
+{
+    std::vector<int> localToGlobalMapping;
+
+    for (auto const& mesh : process_mesh)
+    {
+        for (auto const& element : mesh.second)
+        {
+            boost::copy(element.nodalConnectivity(), std::back_inserter(localToGlobalMapping));
+        }
+    }
+
     // Sort and remove duplicates
     boost::sort(localToGlobalMapping);
     localToGlobalMapping.erase(std::unique(localToGlobalMapping.begin(),
@@ -349,8 +350,7 @@ void Reader::reorderLocalMesh(std::map<StringKey, Value>& localProcessMesh,
     }
 }
 
-std::vector<NodeData>
-Reader::fillLocalNodeList(std::vector<int> const& localToGlobalMapping) const
+std::vector<NodeData> Reader::fillLocalNodeList(std::vector<int> const& localToGlobalMapping) const
 {
     std::vector<NodeData> localNodeList;
     for (auto const& map : localToGlobalMapping)
@@ -363,7 +363,7 @@ Reader::fillLocalNodeList(std::vector<int> const& localToGlobalMapping) const
 void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMesh,
                                std::vector<int> const& localToGlobalMapping,
                                std::vector<NodeData> const& nodalCoordinates,
-                               int processId,
+                               int const processId,
                                bool const isMeshDistributed,
                                bool const printIndices) const
 {
@@ -387,7 +387,7 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
             coordinates.append(Json::Value(xyz));
         }
         nodeGroup["Coordinates"].append(coordinates);
-        nodeGroup["Indices"].append(node.id);
+        if (printIndices) nodeGroup["Indices"].append(node.id);
     }
     event["Nodes"].append(nodeGroup);
 
@@ -406,14 +406,12 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
             Json::Value elementGroup;
 
             // Find the elements which are of the element type in the local mesh
-            auto lower =
-                boost::lower_bound(mesh.second, elementTypeId, [](auto a, auto b) {
-                    return a.typeId() < b;
-                });
-            auto upper =
-                boost::upper_bound(mesh.second, elementTypeId, [](auto a, auto b) {
-                    return a < b.typeId();
-                });
+            auto lower = boost::lower_bound(mesh.second, elementTypeId, [](auto a, auto b) {
+                return a.typeId() < b;
+            });
+            auto upper = boost::upper_bound(mesh.second, elementTypeId, [](auto a, auto b) {
+                return a < b.typeId();
+            });
 
             std::for_each(lower, upper, [&](auto const& element) {
                 Json::Value connectivity(Json::arrayValue);
@@ -438,18 +436,19 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
         {
             event["LocalToGlobalMap"].append(l2g);
         }
+
         int globalStartId = 0;
+
         for (auto const& interface : interfaceElementMap)
         {
-            const int masterId = interface.first.first;
-            const int slaveId  = interface.first.second;
+            const auto masterId = interface.first.first;
+            const auto slaveId  = interface.first.second;
 
             if (masterId < slaveId)
             {
                 std::set<int> intersection;
                 auto const& v1 = interface.second;
-                auto const& v2 =
-                    interfaceElementMap.at(std::pair<int, int>(slaveId, masterId));
+                auto const& v2 = interfaceElementMap.at(std::pair<int, int>(slaveId, masterId));
 
                 std::set_intersection(v1.begin(),
                                       v1.end(),
@@ -459,9 +458,8 @@ void Reader::writeInJsonFormat(std::map<StringKey, Value> const& localProcessMes
 
                 if ((processId == masterId - 1 or processId == slaveId - 1))
                 {
-                    Json::Value interfaceGroup;
-                    Json::Value nodeIds;
-                    Json::Value globalIds;
+                    Json::Value interfaceGroup, nodeIds, globalIds;
+
                     for (auto const& nodeId : intersection)
                     {
                         nodeIds.append(nodeId);
