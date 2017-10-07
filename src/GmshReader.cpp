@@ -311,7 +311,7 @@ Reader::fillLocalToGlobalMap(std::map<StringKey, Value> const& localProcessMesh)
     return localToGlobalMapping;
 }
 
-std::vector<int> fillLocalToGlobalMap(Mesh const& process_mesh) const
+std::vector<int> Reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
 {
     std::vector<int> localToGlobalMapping;
 
