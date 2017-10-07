@@ -26,4 +26,4 @@ Transfinite Surface {ps};
 
 Physical Surface("domain") = {ps};
 
-Physical Line("left_boundary") = l4;
+//Physical Line("left_boundary") = l4;
