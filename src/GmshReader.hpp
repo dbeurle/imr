@@ -23,6 +23,8 @@ struct NodeData
     std::array<double, 3> coordinates;
 };
 
+using List = std::vector<int>;
+
 /**
  * Reader parses Gmsh format and returns the data structures of the mesh
  * in a json format for easier processing
@@ -98,7 +100,7 @@ public:
      * The physicalIds and the names are given by names().
      * The value in the map is a list of ElementData objects
      */
-    std::map<StringKey, Value> const& mesh() const { return gmshMesh; }
+    auto const& mesh() const { return meshes; }
 
     /** Return a list of the coordinates and Ids of the nodes */
     std::vector<NodeData> const& nodes() const { return nodeList; }
@@ -137,20 +139,20 @@ private:
     void fillMesh();
 
     /** Return the local to global mapping for the nodal connectivities */
-    std::vector<int> fillLocalToGlobalMap(std::map<StringKey, Value> const& processMesh) const;
-
-    /** Return the local to global mapping for the nodal connectivities */
-    std::vector<int> fillLocalToGlobalMap(Mesh const& process_mesh) const;
+    List fillLocalToGlobalMap(Mesh const& process_mesh) const;
 
     /** Reorder the mesh to for each process */
-    void reorderLocalMesh(std::map<StringKey, Value>& processMesh,
-                          std::vector<int> const& localToGlobalMapping) const;
+    void reorderLocalMesh(Mesh& processMesh, List const& local_global_mapping) const;
 
-    /** Gather the local process nodes using the local to global mapping */
-    std::vector<NodeData> fillLocalNodeList(std::vector<int> const& localToGlobalMapping) const;
+    /**
+     * Gather the local process nodal coordinates using the local to global mapping.
+     * This is required to reduce the number of coordinates for each process.
+     * \sa writeInJsonFormat
+     */
+    std::vector<NodeData> fillLocalNodeList(List const& local_global_mapping) const;
 
-    void writeInJsonFormat(std::map<StringKey, Value> const& processMesh,
-                           std::vector<int> const& localToGlobalMapping,
+    void writeInJsonFormat(Mesh const& process_mesh,
+                           List const& local_global_mapping,
                            std::vector<NodeData> const& nodalCoordinates,
                            int const processId,
                            bool const isMeshDistributed,
@@ -158,8 +160,6 @@ private:
 
 private:
     std::vector<NodeData> nodeList;
-
-    std::map<StringKey, Value> gmshMesh;
 
     Mesh meshes;
 
