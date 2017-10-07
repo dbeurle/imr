@@ -3,7 +3,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE
 execute_process(COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE_DIR}/mesh_files/decomposed.msh" "${CMAKE_CURRENT_BINARY_DIR}/decomposed.msh")
 
 # generate tests
-foreach(test exceptions)
+foreach(test ReaderTest)
     add_executable(${test} ${test}.cpp)
     target_link_libraries(${test} LINK_PUBLIC GmshReader)
     add_test(${test} ${CMAKE_CURRENT_BUILD_DIR}/${test})
