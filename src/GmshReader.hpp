@@ -16,6 +16,7 @@
 namespace gmsh
 {
 
+/** NodeData represents the geometry for a single node */
 struct NodeData
 {
     int id;
