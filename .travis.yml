@@ -5,13 +5,13 @@ compiler:
     - clang
     - gcc
 before_install:
-    - pip install --user cpp-coveralls
+    - sudo pip install --upgrade pip
     - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
     - echo "yes" | sudo add-apt-repository 'deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main'
     - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
     - sudo apt-get -qq update
-    - sudo apt-get install -y g++-6 clang-3.9 libgfortran-6-dev libgcc-6-dev libboost-all-dev
-    - sudo apt-get -qq update
+    - sudo apt-get install -y g++-6 lcov clang-3.9 libgfortran-6-dev libgcc-6-dev libboost-all-dev
+    - pip install --user cpp-coveralls
 before_script:
     - mkdir build
     - cd build
@@ -21,5 +21,4 @@ script:
     - make -j2
     - ctest
 after_success:
-    - cd ..
-    - if [[ "$CXX" =~ ^g.* ]]; then coveralls --gcov-options '\-lp'; fi
+    - if [[ "$CXX" =~ ^g.* ]]; then make coverage && coveralls --lcov-file coverage.info --no-gcov ; fi
