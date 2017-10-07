@@ -12,8 +12,12 @@ A reader for Gmsh files for processing serial and decomposed grids.  This projec
 
 This project uses CMake as the build system and can be built out-of-tree using:
 * `mkdir build && cd build`
-* `cmake ..`
+* `cmake -DCMAKE_BUILD_TYPE=Release ..`
 * `make all`
+
+Optionally, you can also install the binary to a system location by
+
+* `make install`
 
 # Gmsh file format
 
@@ -25,4 +29,6 @@ Gmsh specifies information tags and the nodal connectivity for each element.  Wh
 
 # Usage
 
-Examples of usage are available in the project directory `examples`.  Work is underway to include a command line interface.
+Examples of usage are available in the project directory `examples`.  There is also a command line interface with the list of command line options given by executing
+
+* `gmshreader --help`
