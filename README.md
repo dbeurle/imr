@@ -31,4 +31,8 @@ Gmsh specifies information tags and the nodal connectivity for each element.  Wh
 
 Examples of usage are available in the project directory `examples`.  There is also a command line interface with the list of command line options given by executing
 
+# Issues
+
+If there are any issues in using the program, please open an issue using the GitHub tool above.  Bug reports, suggestions and improvements are very welcome!
+
 * `gmshreader --help`
