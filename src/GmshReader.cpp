@@ -339,6 +339,8 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
 
     // Write out the nodal coordinates
     Json::Value nodeGroup;
+    auto& nodeGroupCoordinates = nodeGroup["Coordinates"];
+
     for (auto const& node : nodalCoordinates)
     {
         Json::Value coordinates(Json::arrayValue);
@@ -346,7 +348,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
         {
             coordinates.append(Json::Value(xyz));
         }
-        nodeGroup["Coordinates"].append(coordinates);
+        nodeGroupCoordinates.append(coordinates);
 
         if (printIndices) nodeGroup["Indices"].append(node.id);
     }
@@ -355,6 +357,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
     for (auto const& mesh : process_mesh)
     {
         Json::Value elementGroup;
+        auto& elementGroupNodalConnectivity = elementGroup["NodalConnectivity"];
 
         for (auto const& element_data : mesh.second)
         {
@@ -365,7 +368,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
                 connectivity.append(node);
             }
 
-            elementGroup["NodalConnectivity"].append(connectivity);
+            elementGroupNodalConnectivity.append(connectivity);
 
             if (printIndices) elementGroup["Indices"].append(element_data.id());
         }
@@ -378,9 +381,10 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
 
     if (isMeshDistributed)
     {
+        auto& eventLocalToGlobalMap = event["LocalToGlobalMap"];
         for (auto const& l2g : localToGlobalMapping)
         {
-            event["LocalToGlobalMap"].append(l2g);
+            eventLocalToGlobalMap.append(l2g);
         }
 
         int globalStartId = 0;
@@ -393,6 +397,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
             if (masterId < slaveId)
             {
                 std::set<int> intersection;
+
                 auto const& v1 = interface.second;
                 auto const& v2 = interfaceElementMap.at(std::pair<int, int>(slaveId, masterId));
 
