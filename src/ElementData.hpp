@@ -23,7 +23,10 @@ public:
 
     int maxProcessId() const { return m_maxProcessId; }
 
-    bool isOwnedByProcess(int processId) const { return processId == m_processOwner; }
+    bool isOwnedByProcess(int const processId) const
+    {
+        return processId == m_processOwner;
+    }
 
     bool isSharedByMultipleProcesses() const
     {
