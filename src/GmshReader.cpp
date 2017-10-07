@@ -266,8 +266,7 @@ void Reader::writeMeshToJson(bool const printIndices) const
                           printIndices);
 
         std::cout << std::string(2, ' ') << "Finished writing out JSON file for mesh partition "
-                  << partition << "\n"
-                  << std::flush;
+                  << partition << "\n";
     }
 }
 
