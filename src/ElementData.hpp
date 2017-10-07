@@ -8,10 +8,13 @@ namespace gmsh
 class ElementData
 {
 public:
+    enum Property { Physical = 0, Geometric };
+
+public:
     explicit ElementData(std::vector<int> nodalConnectivity,
                          std::vector<int> tags,
-                         int typeId,
-                         int id);
+                         int const typeId,
+                         int const id);
 
     int id() const { return m_id; }
 
@@ -23,15 +26,11 @@ public:
 
     int maxProcessId() const { return m_maxProcessId; }
 
-    bool isOwnedByProcess(int const processId) const
-    {
-        return processId == m_processOwner;
-    }
+    bool isOwnedByProcess(int const processId) const { return processId == m_processOwner; }
 
-    bool isSharedByMultipleProcesses() const
-    {
-        return m_isElementShared && m_partitionTags[0] > 1;
-    }
+    auto owner_process() const { return m_processOwner; }
+
+    bool isSharedByMultipleProcesses() const { return m_isElementShared && m_partitionTags[0] > 1; }
 
     std::vector<int> const& nodalConnectivity() const { return m_nodalConnectivity; }
 
