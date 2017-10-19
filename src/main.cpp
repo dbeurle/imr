@@ -18,8 +18,7 @@ int main(int argc, char* argv[])
 
         visible.add_options()("help", "Print help messages");
         visible.add_options()(
-            "zero-based",
-            "Use zero based indexing for elements and nodes.  Default: one-based.");
+            "zero-based", "Use zero based indexing for elements and nodes.  Default: one-based.");
         visible.add_options()("local-ordering",
                               "For distributed meshes, each processor has local indexing "
                               "and a local to global mapping.  Default: global-ordering");
@@ -29,9 +28,7 @@ int main(int argc, char* argv[])
 
         po::options_description hidden("Hidden options");
 
-        hidden.add_options()("input-file",
-                             po::value<std::vector<std::string>>(),
-                             "input file");
+        hidden.add_options()("input-file", po::value<std::vector<std::string>>(), "input file");
 
         po::options_description cmdline_options;
         cmdline_options.add(visible).add(hidden);
@@ -43,11 +40,9 @@ int main(int argc, char* argv[])
 
         try
         {
-            po::store(po::command_line_parser(argc, argv)
-                          .options(cmdline_options)
-                          .positional(p)
-                          .run(),
-                      vm);
+            po::store(
+                po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(),
+                vm);
 
             if (vm.count("help") || argc < 2)
             {
@@ -67,9 +62,8 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        Reader::IndexingBase indexing = vm.count("zero-based") > 0
-                                            ? Reader::IndexingBase::Zero
-                                            : Reader::IndexingBase::One;
+        Reader::IndexingBase indexing =
+            vm.count("zero-based") > 0 ? Reader::IndexingBase::Zero : Reader::IndexingBase::One;
 
         Reader::NodalOrdering ordering = vm.count("local-ordering") > 0
                                              ? Reader::NodalOrdering::Local
@@ -80,7 +74,7 @@ int main(int argc, char* argv[])
             for (auto const& input : vm["input-file"].as<std::vector<std::string>>())
             {
                 Reader reader(input, ordering, indexing);
-                reader.writeMeshToJson(vm.count("with-indices") > 1);
+                reader.writeMeshToJson(vm.count("with-indices") > 0);
             }
         }
         else
