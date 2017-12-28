@@ -125,22 +125,12 @@ void Reader::fillMesh()
                 {
                     for (int i = 4; i < tags[2] + 3; ++i)
                     {
-                        auto const ownership = std::make_pair(tags[3], -tags[i]);
+                        auto const ownership = std::make_pair(tags[3], std::abs(tags[i]));
 
-                        if (interfaceElementMap.find(ownership) != interfaceElementMap.end())
-                        {
-                            for (auto const& nodeId : elementData.nodalConnectivity())
-                            {
-                                interfaceElementMap[ownership].emplace(nodeId);
-                            }
-                        }
-                        else
-                        {
-                            std::set<int> interfaceNodes(elementData.nodalConnectivity().begin(),
-                                                         elementData.nodalConnectivity().end());
+                        auto const& connectivity = elementData.nodalConnectivity();
 
-                            interfaceElementMap.emplace(ownership, interfaceNodes);
-                        }
+                        interfaceElementMap[ownership].insert(std::begin(connectivity),
+                                                              std::end(connectivity));
                     }
                 }
             }
