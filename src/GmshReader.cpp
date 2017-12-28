@@ -6,10 +6,8 @@
 #include "GmshReaderException.hpp"
 
 #include <algorithm>
-#include <boost/container/flat_set.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/numeric.hpp>
 #include <chrono>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -23,13 +21,14 @@ Reader::Reader(std::string const& fileName, NodalOrdering ordering, IndexingBase
       useZeroBasedIndexing(base == IndexingBase::Zero),
       useLocalNodalConnectivity(ordering == NodalOrdering::Local)
 {
-    gmshFile.precision(sizeof(double));
     fillMesh();
 }
 
 void Reader::fillMesh()
 {
     auto const start = std::chrono::high_resolution_clock::now();
+
+    std::fstream gmshFile;
 
     gmshFile.open(fileName.c_str());
 
@@ -100,8 +99,8 @@ void Reader::fillMesh()
 
                 auto const numberOfNodes = mapElementData(elementTypeId);
 
-                List tags(numberOfTags, 0);
-                List nodalConnectivity(numberOfNodes, 0);
+                list tags(numberOfTags, 0);
+                list nodalConnectivity(numberOfNodes, 0);
 
                 for (auto& tag : tags)
                 {
@@ -147,8 +146,6 @@ void Reader::fillMesh()
             }
         }
     }
-    gmshFile.close();
-
     std::cout << std::string(2, ' ') << "A total number of " << number_of_partitions
               << " partitions was found\n";
 
@@ -270,27 +267,29 @@ void Reader::writeMeshToJson(bool const printIndices) const
     }
 }
 
-List Reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
+list Reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
 {
-    List local_global_mapping;
+    list local_global_mapping;
 
     for (auto const& mesh : process_mesh)
     {
         for (auto const& element : mesh.second)
         {
-            boost::copy(element.nodalConnectivity(), std::back_inserter(local_global_mapping));
+            auto const& nodes = element.nodalConnectivity();
+            std::copy(std::begin(nodes), std::end(nodes), std::back_inserter(local_global_mapping));
         }
     }
 
     // Sort and remove duplicates
-    boost::sort(local_global_mapping);
+    std::sort(std::begin(local_global_mapping), std::end(local_global_mapping));
+
     local_global_mapping.erase(std::unique(local_global_mapping.begin(),
                                            local_global_mapping.end()),
                                local_global_mapping.end());
     return local_global_mapping;
 }
 
-void Reader::reorderLocalMesh(Mesh& process_mesh, List const& local_global_mapping) const
+void Reader::reorderLocalMesh(Mesh& process_mesh, list const& local_global_mapping) const
 {
     for (auto& mesh : process_mesh)
     {
@@ -298,7 +297,9 @@ void Reader::reorderLocalMesh(Mesh& process_mesh, List const& local_global_mappi
         {
             for (auto& node : element.nodalConnectivity())
             {
-                auto const found = boost::lower_bound(local_global_mapping, node);
+                auto const found = std::lower_bound(std::begin(local_global_mapping),
+                                                    std::end(local_global_mapping),
+                                                    node);
 
                 // Reset the node value to that inside the local ordering with
                 // the default of one based ordering
@@ -308,7 +309,7 @@ void Reader::reorderLocalMesh(Mesh& process_mesh, List const& local_global_mappi
     }
 }
 
-std::vector<NodeData> Reader::fillLocalNodeList(List const& local_global_mapping) const
+std::vector<NodeData> Reader::fillLocalNodeList(list const& local_global_mapping) const
 {
     std::vector<NodeData> local_node_list;
     local_node_list.reserve(local_global_mapping.size());
@@ -321,7 +322,7 @@ std::vector<NodeData> Reader::fillLocalNodeList(List const& local_global_mapping
 }
 
 void Reader::writeInJsonFormat(Mesh const& process_mesh,
-                               List const& localToGlobalMapping,
+                               list const& localToGlobalMapping,
                                std::vector<NodeData> const& nodalCoordinates,
                                int const processId,
                                bool const isMeshDistributed,
@@ -387,19 +388,19 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
             eventLocalToGlobalMap.append(l2g);
         }
 
-        int globalStartId = 0;
+        long globalStartId{0l};
 
         for (auto const& interface : interfaceElementMap)
         {
-            const auto masterId = interface.first.first;
-            const auto slaveId  = interface.first.second;
+            auto const master_partition = interface.first.first;
+            auto const slave_partition  = interface.first.second;
 
-            if (masterId < slaveId)
+            if (master_partition < slave_partition)
             {
                 std::set<int> intersection;
 
                 auto const& v1 = interface.second;
-                auto const& v2 = interfaceElementMap.at(std::pair<int, int>(slaveId, masterId));
+                auto const& v2 = interfaceElementMap.at({slave_partition, master_partition});
 
                 std::set_intersection(v1.begin(),
                                       v1.end(),
@@ -407,16 +408,22 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
                                       v2.end(),
                                       std::inserter(intersection, intersection.begin()));
 
-                if ((processId == masterId - 1 or processId == slaveId - 1))
+                if (processId == master_partition - 1 or processId == slave_partition - 1)
                 {
-                    Json::Value interfaceGroup, nodeIds, globalIds;
+                    Json::Value interfaceGroup, nodeIds;
 
                     for (auto const& nodeId : intersection) nodeIds.append(nodeId);
 
-                    interfaceGroup["Master"].append(interface.first.first);
-                    interfaceGroup["Value"].append(processId == masterId - 1 ? 1 : -1);
-                    interfaceGroup["Slave"].append(interface.first.second);
+                    interfaceGroup["Master"].append(useZeroBasedIndexing ? master_partition - 1
+                                                                         : master_partition);
+
+                    interfaceGroup["Slave"].append(useZeroBasedIndexing ? slave_partition - 1
+                                                                        : slave_partition);
+
+                    interfaceGroup["Value"].append(processId == master_partition - 1 ? 1 : -1);
+
                     interfaceGroup["NodeIds"].append(nodeIds);
+
                     interfaceGroup["GlobalStartId"].append(globalStartId);
 
                     event["Interface"].append(interfaceGroup);
@@ -424,10 +431,10 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
                 globalStartId += intersection.size();
             }
         }
-        event["NumInterfaceNodes"].append(globalStartId);
+        event["NumInterfaceNodes"] = globalStartId;
     }
     Json::StyledWriter jsonwriter;
     writer << jsonwriter.write(event);
     writer.close();
 }
-}
+} // namespace gmsh

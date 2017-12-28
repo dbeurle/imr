@@ -5,7 +5,6 @@
 #pragma once
 
 #include <array>
-#include <fstream>
 #include <map>
 #include <set>
 #include <string>
@@ -15,7 +14,6 @@
 
 namespace gmsh
 {
-
 /** NodeData represents the geometry for a single node */
 struct NodeData
 {
@@ -23,7 +21,7 @@ struct NodeData
     std::array<double, 3> coordinates;
 };
 
-using List = std::vector<int>;
+using list = std::vector<std::int32_t>;
 
 /**
  * Reader parses Gmsh format and returns the data structures of the mesh
@@ -36,6 +34,8 @@ public:
     using Value     = std::vector<ElementData>;
 
     using Mesh = std::map<std::pair<StringKey, int>, Value>;
+
+    using owner_sharer_t = std::pair<int, int>;
 
 public:
     /** Mesh partition nodal connectivity */
@@ -139,20 +139,20 @@ private:
     void fillMesh();
 
     /** Return the local to global mapping for the nodal connectivities */
-    List fillLocalToGlobalMap(Mesh const& process_mesh) const;
+    list fillLocalToGlobalMap(Mesh const& process_mesh) const;
 
     /** Reorder the mesh to for each process */
-    void reorderLocalMesh(Mesh& processMesh, List const& local_global_mapping) const;
+    void reorderLocalMesh(Mesh& processMesh, list const& local_global_mapping) const;
 
     /**
      * Gather the local process nodal coordinates using the local to global mapping.
      * This is required to reduce the number of coordinates for each process.
      * \sa writeInJsonFormat
      */
-    std::vector<NodeData> fillLocalNodeList(List const& local_global_mapping) const;
+    std::vector<NodeData> fillLocalNodeList(list const& local_global_mapping) const;
 
     void writeInJsonFormat(Mesh const& process_mesh,
-                           List const& local_global_mapping,
+                           list const& local_global_mapping,
                            std::vector<NodeData> const& nodalCoordinates,
                            int const processId,
                            bool const isMeshDistributed,
@@ -168,14 +168,12 @@ private:
      * pair.first:  process that owns the element
      * pair.second: process that shares the element
      * Value:       node ids of the interface element
-     *
      */
-    std::map<std::pair<int, int>, std::set<int>> interfaceElementMap;
+    std::map<owner_sharer_t, std::set<int>> interfaceElementMap;
 
     std::map<int, std::string> physicalGroupMap;
 
-    std::string fileName;  //!< File name of gmsh file
-    std::fstream gmshFile; //!< Hold an object to the file stream
+    std::string fileName; //!< File name of gmsh file
 
     bool useZeroBasedIndexing;
     bool useLocalNodalConnectivity;
