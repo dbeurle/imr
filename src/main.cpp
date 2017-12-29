@@ -17,14 +17,21 @@ int main(int argc, char* argv[])
         po::options_description visible("Options");
 
         visible.add_options()("help", "Print help messages");
+
         visible.add_options()(
             "zero-based", "Use zero based indexing for elements and nodes.  Default: one-based.");
+
         visible.add_options()("local-ordering",
                               "For distributed meshes, each processor has local indexing "
                               "and a local to global mapping.  Default: global-ordering");
+
         visible.add_options()("with-indices",
                               "Write out extra indices (results in file size increase).  "
                               "Default without-indices");
+
+        visible.add_options()("interprocess-format",
+                              "Write out shared process interfaces (only for decomposed meshes).  "
+                              "Default feti-format");
 
         po::options_description hidden("Hidden options");
 
@@ -62,18 +69,22 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        Reader::IndexingBase indexing =
+        Reader::IndexingBase const indexing =
             vm.count("zero-based") > 0 ? Reader::IndexingBase::Zero : Reader::IndexingBase::One;
 
-        Reader::NodalOrdering ordering = vm.count("local-ordering") > 0
-                                             ? Reader::NodalOrdering::Local
-                                             : Reader::NodalOrdering::Global;
+        Reader::NodalOrdering const ordering = vm.count("local-ordering") > 0
+                                                   ? Reader::NodalOrdering::Local
+                                                   : Reader::NodalOrdering::Global;
+
+        Reader::distributed const distributed_option = vm.count("interprocess-format") > 0
+                                                           ? Reader::distributed::interprocess
+                                                           : Reader::distributed::feti;
 
         if (vm.count("input-file"))
         {
             for (auto const& input : vm["input-file"].as<std::vector<std::string>>())
             {
-                Reader reader(input, ordering, indexing);
+                Reader reader(input, ordering, indexing, distributed_option);
                 reader.writeMeshToJson(vm.count("with-indices") > 0);
             }
         }

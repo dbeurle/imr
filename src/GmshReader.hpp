@@ -17,7 +17,7 @@ namespace gmsh
 /** NodeData represents the geometry for a single node */
 struct NodeData
 {
-    int id;
+    std::int64_t id;
     std::array<double, 3> coordinates;
 };
 
@@ -30,12 +30,10 @@ using list = std::vector<std::int32_t>;
 class Reader
 {
 public:
-    using StringKey = std::string;
-    using Value     = std::vector<ElementData>;
+    using Value = std::vector<ElementData>;
+    using Mesh  = std::map<std::pair<std::string, std::int32_t>, Value>;
 
-    using Mesh = std::map<std::pair<StringKey, int>, Value>;
-
-    using owner_sharer_t = std::pair<int, int>;
+    using owner_sharer_t = std::pair<std::int32_t, std::int32_t>;
 
 public:
     /** Mesh partition nodal connectivity */
@@ -44,8 +42,11 @@ public:
     /** Nodal numbering to be zero or one based */
     enum class IndexingBase { Zero, One };
 
+    enum class distributed { feti, interprocess };
+
     /** Gmsh element numbering scheme */
-    enum ELEMENT_TYPE_ID { // Standard linear elements
+    enum ELEMENT_TYPE_ID {
+        // Standard linear elements
         LINE2 = 1,
         TRIANGLE3,
         QUADRILATERAL4,
@@ -91,7 +92,10 @@ public:
               the mesh file in addition to the nodal connectivity
      * @param Flag for zero based indexing in nodal coordinates
      */
-    Reader(std::string const& fileName, NodalOrdering, IndexingBase);
+    Reader(std::string const& input_file_name,
+           NodalOrdering const,
+           IndexingBase const,
+           distributed const distributed_option = distributed::feti);
 
     ~Reader() = default;
 
@@ -103,10 +107,10 @@ public:
     auto const& mesh() const { return meshes; }
 
     /** Return a list of the coordinates and Ids of the nodes */
-    std::vector<NodeData> const& nodes() const { return nodeList; }
+    std::vector<NodeData> const& nodes() const { return nodal_data; }
 
     /** Return the physical names associated with the mesh */
-    std::map<int, std::string> const& names() const { return physicalGroupMap; }
+    std::map<std::int32_t, std::string> const& names() const { return physicalGroupMap; }
 
     /**
      * Write out a distributed mesh in the Murge format which requires a
@@ -154,12 +158,12 @@ private:
     void writeInJsonFormat(Mesh const& process_mesh,
                            list const& local_global_mapping,
                            std::vector<NodeData> const& nodalCoordinates,
-                           int const processId,
-                           bool const isMeshDistributed,
+                           int const process_number,
+                           bool const is_distributed,
                            bool const printIndices) const;
 
 private:
-    std::vector<NodeData> nodeList;
+    std::vector<NodeData> nodal_data;
 
     Mesh meshes;
 
@@ -169,15 +173,17 @@ private:
      * pair.second: process that shares the element
      * Value:       node ids of the interface element
      */
-    std::map<owner_sharer_t, std::set<int>> interfaceElementMap;
+    std::map<owner_sharer_t, std::set<std::int64_t>> interfaceElementMap;
 
-    std::map<int, std::string> physicalGroupMap;
+    std::map<std::int32_t, std::string> physicalGroupMap;
 
-    std::string fileName; //!< File name of gmsh file
+    std::string input_file_name; //!< File name of gmsh file
 
     bool useZeroBasedIndexing;
     bool useLocalNodalConnectivity;
 
+    bool is_feti_format = true; //!< Output in FETI format
+
     int number_of_partitions = 1;
 };
-}
+} // namespace gmsh

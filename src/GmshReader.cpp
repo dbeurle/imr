@@ -16,10 +16,14 @@
 
 namespace gmsh
 {
-Reader::Reader(std::string const& fileName, NodalOrdering ordering, IndexingBase base)
-    : fileName(fileName),
+Reader::Reader(std::string const& input_file_name,
+               NodalOrdering const ordering,
+               IndexingBase const base,
+               distributed const distributed_option)
+    : input_file_name(input_file_name),
       useZeroBasedIndexing(base == IndexingBase::Zero),
-      useLocalNodalConnectivity(ordering == NodalOrdering::Local)
+      useLocalNodalConnectivity(ordering == NodalOrdering::Local),
+      is_feti_format(distributed_option == distributed::feti)
 {
     fillMesh();
 }
@@ -28,74 +32,70 @@ void Reader::fillMesh()
 {
     auto const start = std::chrono::high_resolution_clock::now();
 
-    std::fstream gmshFile;
+    std::fstream gmsh_file(input_file_name);
 
-    gmshFile.open(fileName.c_str());
-
-    if (!gmshFile.is_open())
+    if (!gmsh_file.is_open())
     {
-        throw GmshReaderException("Filename " + fileName + " is not valid");
+        throw GmshReaderException("Input file " + input_file_name + " was not able to be opened");
     }
 
     std::string token, null;
 
-    std::vector<std::string> physicalNames;
-
     // Loop around file and read in keyword tokens
-    while (!gmshFile.eof())
+    while (!gmsh_file.eof())
     {
-        gmshFile >> token;
+        gmsh_file >> token;
 
         if (token == "$MeshFormat")
         {
-            float gmshVersion; // File format version
-            short dataType;    // Precision
+            float gmshVersion;     // File format version
+            std::int32_t dataType; // Precision
 
-            gmshFile >> gmshVersion >> dataType >> null;
+            gmsh_file >> gmshVersion >> dataType >> null;
             checkSupportedGmsh(gmshVersion);
         }
         else if (token == "$PhysicalNames")
         {
-            std::string physicalName;
+            std::string physical_name;
 
-            int physicalIds = 0;
-            gmshFile >> physicalIds;
+            std::int32_t physicalIds;
+            gmsh_file >> physicalIds;
 
             for (auto i = 0; i < physicalIds; ++i)
             {
-                int dimension = 0, physicalId = 0;
-                gmshFile >> dimension >> physicalId >> physicalName;
+                std::int32_t dimension, physicalId;
+                gmsh_file >> dimension >> physicalId >> physical_name;
 
                 // Extract the name from the quotes
-                physicalName.erase(remove(physicalName.begin(), physicalName.end(), '\"'),
-                                   physicalName.end());
-                physicalGroupMap.emplace(physicalId, physicalName);
+                physical_name.erase(std::remove(physical_name.begin(), physical_name.end(), '\"'),
+                                    physical_name.end());
+                physicalGroupMap.emplace(physicalId, physical_name);
             }
             token.clear();
-            gmshFile >> token;
+            gmsh_file >> token;
         }
         else if (token == "$Nodes")
         {
-            int nodeIds = 0;
-            gmshFile >> nodeIds;
-            nodeList.resize(nodeIds);
+            std::int64_t number_of_nodes;
+            gmsh_file >> number_of_nodes;
+            nodal_data.resize(number_of_nodes);
 
-            for (auto& node : nodeList)
+            for (auto& node : nodal_data)
             {
-                gmshFile >> node.id >> node.coordinates[0] >> node.coordinates[1] >>
+                gmsh_file >> node.id >> node.coordinates[0] >> node.coordinates[1] >>
                     node.coordinates[2];
             }
         }
         else if (token == "$Elements")
         {
-            int elementIds = 0;
-            gmshFile >> elementIds;
+            int elementIds;
+            gmsh_file >> elementIds;
 
             for (int elementId = 0; elementId < elementIds; elementId++)
             {
                 int id = 0, numberOfTags = 0, elementTypeId = 0;
 
-                gmshFile >> id >> elementTypeId >> numberOfTags;
+                gmsh_file >> id >> elementTypeId >> numberOfTags;
 
                 auto const numberOfNodes = mapElementData(elementTypeId);
 
@@ -104,11 +104,11 @@ void Reader::fillMesh()
 
                 for (auto& tag : tags)
                 {
-                    gmshFile >> tag;
+                    gmsh_file >> tag;
                 }
                 for (auto& nodeId : nodalConnectivity)
                 {
-                    gmshFile >> nodeId;
+                    gmsh_file >> nodeId;
                 }
 
                 auto const physicalId = tags[0];
@@ -125,12 +125,12 @@ void Reader::fillMesh()
                 {
                     for (int i = 4; i < tags[2] + 3; ++i)
                     {
-                        auto const ownership = std::make_pair(tags[3], std::abs(tags[i]));
+                        auto const owner_sharer = std::make_pair(tags[3], std::abs(tags[i]));
 
                         auto const& connectivity = elementData.nodalConnectivity();
 
-                        interfaceElementMap[ownership].insert(std::begin(connectivity),
-                                                              std::end(connectivity));
+                        interfaceElementMap[owner_sharer].insert(std::begin(connectivity),
+                                                                 std::end(connectivity));
                     }
                 }
             }
@@ -199,7 +199,7 @@ void Reader::checkSupportedGmsh(float const gmshVersion)
     }
 }
 
-void Reader::writeMeshToJson(bool const printIndices) const
+void Reader::writeMeshToJson(bool const print_indices) const
 {
     for (auto partition = 0; partition < number_of_partitions; ++partition)
     {
@@ -250,7 +250,7 @@ void Reader::writeMeshToJson(bool const printIndices) const
                           local_nodes,
                           partition,
                           number_of_partitions > 1,
-                          printIndices);
+                          print_indices);
 
         std::cout << std::string(2, ' ') << "Finished writing out JSON file for mesh partition "
                   << partition << "\n";
@@ -273,9 +273,9 @@ list Reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
     // Sort and remove duplicates
     std::sort(std::begin(local_global_mapping), std::end(local_global_mapping));
 
-    local_global_mapping.erase(std::unique(local_global_mapping.begin(),
-                                           local_global_mapping.end()),
-                               local_global_mapping.end());
+    local_global_mapping.erase(std::unique(std::begin(local_global_mapping),
+                                           std::end(local_global_mapping)),
+                               std::end(local_global_mapping));
     return local_global_mapping;
 }
 
@@ -301,32 +301,33 @@ void Reader::reorderLocalMesh(Mesh& process_mesh, list const& local_global_mappi
 
 std::vector<NodeData> Reader::fillLocalNodeList(list const& local_global_mapping) const
 {
-    std::vector<NodeData> local_node_list;
-    local_node_list.reserve(local_global_mapping.size());
+    std::vector<NodeData> local_nodal_data;
+    local_nodal_data.reserve(local_global_mapping.size());
 
     for (auto const& node_index : local_global_mapping)
     {
-        local_node_list.push_back(nodeList[node_index - 1]);
+        local_nodal_data.emplace_back(nodal_data[node_index - 1]);
     }
-    return local_node_list;
+    return local_nodal_data;
 }
 
 void Reader::writeInJsonFormat(Mesh const& process_mesh,
                                list const& localToGlobalMapping,
                                std::vector<NodeData> const& nodalCoordinates,
-                               int const processId,
-                               bool const isMeshDistributed,
-                               bool const printIndices) const
+                               int const partition_number,
+                               bool const is_decomposed,
+                               bool const print_indices) const
 {
     // Write out each file to Json format
     Json::Value event;
 
-    std::string filename = fileName.substr(0, fileName.find_last_of(".")) + ".mesh";
+    std::string output_file_name =
+        input_file_name.substr(0, input_file_name.find_last_of(".")) + ".mesh";
 
-    if (isMeshDistributed) filename += std::to_string(processId);
+    if (is_decomposed) output_file_name += std::to_string(partition_number);
 
     std::fstream writer;
-    writer.open(filename, std::ios::out);
+    writer.open(output_file_name, std::ios::out);
 
     // Write out the nodal coordinates
     Json::Value nodeGroup;
@@ -341,7 +342,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
         }
         nodeGroupCoordinates.append(coordinates);
 
-        if (printIndices) nodeGroup["Indices"].append(node.id);
+        if (print_indices) nodeGroup["Indices"].append(node.id);
     }
     event["Nodes"].append(nodeGroup);
 
@@ -361,7 +362,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
 
             elementGroupNodalConnectivity.append(connectivity);
 
-            if (printIndices) elementGroup["Indices"].append(element_data.id());
+            if (print_indices) elementGroup["Indices"].append(element_data.id());
         }
 
         elementGroup["Name"] = mesh.first.first;
@@ -370,7 +371,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
         event["Elements"].append(elementGroup);
     }
 
-    if (isMeshDistributed)
+    if (is_decomposed)
     {
         auto& eventLocalToGlobalMap = event["LocalToGlobalMap"];
         for (auto const& l2g : localToGlobalMapping)
@@ -378,50 +379,94 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
             eventLocalToGlobalMap.append(l2g);
         }
 
-        long globalStartId{0l};
-
-        for (auto const& interface : interfaceElementMap)
+        if (is_feti_format)
         {
-            auto const master_partition = interface.first.first;
-            auto const slave_partition  = interface.first.second;
+            long globalStartId{0l};
 
-            if (master_partition < slave_partition)
+            for (auto const& interface : interfaceElementMap)
             {
-                std::set<int> intersection;
+                auto const master_partition = interface.first.first;
+                auto const slave_partition  = interface.first.second;
 
-                auto const& v1 = interface.second;
-                auto const& v2 = interfaceElementMap.at({slave_partition, master_partition});
-
-                std::set_intersection(v1.begin(),
-                                      v1.end(),
-                                      v2.begin(),
-                                      v2.end(),
-                                      std::inserter(intersection, intersection.begin()));
-
-                if (processId == master_partition - 1 or processId == slave_partition - 1)
+                if (master_partition < slave_partition)
                 {
-                    Json::Value interfaceGroup, nodeIds;
+                    std::set<std::int64_t> intersection;
 
-                    for (auto const& nodeId : intersection) nodeIds.append(nodeId);
+                    auto const& v1 = interface.second;
+                    auto const& v2 = interfaceElementMap.at({slave_partition, master_partition});
 
-                    interfaceGroup["Master"].append(useZeroBasedIndexing ? master_partition - 1
-                                                                         : master_partition);
+                    std::set_intersection(std::begin(v1),
+                                          std::end(v1),
+                                          std::begin(v2),
+                                          std::end(v2),
+                                          std::inserter(intersection, std::begin(intersection)));
 
-                    interfaceGroup["Slave"].append(useZeroBasedIndexing ? slave_partition - 1
-                                                                        : slave_partition);
+                    if (partition_number == master_partition - 1 or
+                        partition_number == slave_partition - 1)
+                    {
+                        Json::Value interface_group, nodal_numbers;
 
-                    interfaceGroup["Value"].append(processId == master_partition - 1 ? 1 : -1);
+                        for (auto const& node_number : intersection)
+                            nodal_numbers.append(node_number);
 
-                    interfaceGroup["NodeIds"].append(nodeIds);
+                        interface_group["NodeIds"].append(nodal_numbers);
 
-                    interfaceGroup["GlobalStartId"].append(globalStartId);
+                        interface_group["Master"] =
+                            useZeroBasedIndexing ? master_partition - 1 : master_partition;
 
-                    event["Interface"].append(interfaceGroup);
+                        interface_group["Slave"] =
+                            useZeroBasedIndexing ? slave_partition - 1 : slave_partition;
+
+                        interface_group["Value"] =
+                            partition_number == master_partition - 1 ? 1 : -1;
+
+                        interface_group["GlobalStartId"] = globalStartId;
+
+                        event["Interface"].append(interface_group);
+                    }
+                    globalStartId += intersection.size();
                 }
-                globalStartId += intersection.size();
+            }
+            event["NumInterfaceNodes"] = globalStartId;
+        }
+        else
+        {
+            for (auto const& interface : interfaceElementMap)
+            {
+                auto const master_partition = interface.first.first;
+                auto const slave_partition  = interface.first.second;
+
+                if (partition_number == master_partition - 1 or
+                    partition_number == slave_partition - 1)
+                {
+                    std::set<std::int64_t> intersection;
+
+                    // Find the common indices between the master and the slave
+                    // partition and print these out for each process interface
+                    auto const& v1 = interface.second;
+                    auto const& v2 = interfaceElementMap.at({slave_partition, master_partition});
+
+                    std::set_intersection(std::begin(v1),
+                                          std::end(v1),
+                                          std::begin(v2),
+                                          std::end(v2),
+                                          std::inserter(intersection, std::begin(intersection)));
+
+                    Json::Value interface_group, nodal_numbers;
+
+                    for (auto const& node_number : intersection)
+                    {
+                        nodal_numbers.append(node_number);
+                    }
+                    interface_group["Indices"] = nodal_numbers;
+
+                    interface_group["Process"] =
+                        useZeroBasedIndexing ? slave_partition - 1 : slave_partition;
+
+                    event["Interface"].append(interface_group);
+                }
             }
         }
-        event["NumInterfaceNodes"] = globalStartId;
     }
     Json::StyledWriter jsonwriter;
     writer << jsonwriter.write(event);
