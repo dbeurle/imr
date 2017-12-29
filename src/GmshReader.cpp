@@ -436,8 +436,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
                 auto const master_partition = interface.first.first;
                 auto const slave_partition  = interface.first.second;
 
-                if (partition_number == master_partition - 1 or
-                    partition_number == slave_partition - 1)
+                if (partition_number == slave_partition - 1)
                 {
                     std::set<std::int64_t> intersection;
 
@@ -456,12 +455,12 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
 
                     for (auto const& node_number : intersection)
                     {
-                        nodal_numbers.append(node_number);
+                        nodal_numbers.append(useZeroBasedIndexing ? node_number - 1 : node_number);
                     }
                     interface_group["Indices"] = nodal_numbers;
 
                     interface_group["Process"] =
-                        useZeroBasedIndexing ? slave_partition - 1 : slave_partition;
+                        useZeroBasedIndexing ? master_partition - 1 : master_partition;
 
                     event["Interface"].append(interface_group);
                 }
@@ -472,4 +471,4 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
     writer << jsonwriter.write(event);
     writer.close();
 }
-} // namespace gmsh
+}
