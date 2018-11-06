@@ -113,7 +113,7 @@ void Reader::fillMesh()
 
                 auto const physicalId = tags[0];
 
-                ElementData elementData(nodalConnectivity, tags, elementTypeId, id);
+                ElementData elementData(std::move(nodalConnectivity), tags, elementTypeId, id);
 
                 // Update the total number of partitions on the fly
                 number_of_partitions = std::max(elementData.maxProcessId(), number_of_partitions);
@@ -322,7 +322,7 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
     Json::Value event;
 
     std::string output_file_name =
-        input_file_name.substr(0, input_file_name.find_last_of(".")) + ".mesh";
+        input_file_name.substr(0, input_file_name.find_last_of('.')) + ".mesh";
 
     if (is_decomposed) output_file_name += std::to_string(partition_number);
 
