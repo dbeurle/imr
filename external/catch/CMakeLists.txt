@@ -1,20 +1,23 @@
-cmake_minimum_required(VERSION 2.8.8)
-project(catch_builder CXX)
+
 include(ExternalProject)
-find_package(Git REQUIRED)
 
 ExternalProject_Add(
-    catch
-    PREFIX ${CMAKE_BINARY_DIR}/catch
-    GIT_REPOSITORY https://github.com/philsquared/Catch.git
-    TIMEOUT 10
-    UPDATE_COMMAND "" # ${GIT_EXECUTABLE} pull
+    catch2-external
+    PREFIX ${CMAKE_BINARY_DIR}/external/catch2
+    URL https://github.com/catchorg/Catch2/archive/v2.4.2.tar.gz
+    # Disable the install and update steps
+    UPDATE_COMMAND ""
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     INSTALL_COMMAND ""
-    LOG_DOWNLOAD ON
-   )
+)
 
-# Expose required variable (CATCH_INCLUDE_DIR) to parent scope
-ExternalProject_Get_Property(catch source_dir)
-set(CATCH_INCLUDE_DIR ${source_dir}/single_include CACHE INTERNAL "Path to include folder for Catch")
+ExternalProject_Get_Property(catch2-external source_dir)
+
+add_library(Catch2 INTERFACE)
+
+add_dependencies(Catch2 catch2-external)
+
+target_include_directories(Catch2 INTERFACE ${source_dir}/single_include)
+
+add_library(Catch2::Catch2 ALIAS Catch2)
