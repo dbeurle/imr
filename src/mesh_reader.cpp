@@ -460,8 +460,8 @@ void mesh_reader::writeInJsonFormat(Mesh const& process_mesh,
                     }
                     interface_group["Indices"] = nodal_numbers;
 
-                    interface_group["Process"] =
-                        useZeroBasedIndexing ? master_partition - 1 : master_partition;
+                    interface_group["Process"] = useZeroBasedIndexing ? master_partition - 1
+                                                                      : master_partition;
 
                     event["Interface"].append(interface_group);
                 }

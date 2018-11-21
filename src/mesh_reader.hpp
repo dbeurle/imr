@@ -1,6 +1,3 @@
-/*
- * For licensing please refer to the LICENSE.md file
- */
 
 #pragma once
 
@@ -75,14 +72,12 @@ public:
     };
 
 public:
-    /**
-     * @param File name of gmsh mesh
-     * @param Flag to use local processor ordering or retain global ordering.
-              If this is true, then each of the output meshes will have be ordered
-              locally and there will be a local to global mapping provided in the
-              the mesh file in addition to the nodal connectivity
-     * @param Flag for zero based indexing in nodal coordinates
-     */
+    /// \param File name of gmsh mesh
+    /// \param Flag to use local processor ordering or retain global ordering.
+    ///        If this is true, then each of the output meshes will have be ordered
+    ///        locally and there will be a local to global mapping provided in the
+    ///        the mesh file in addition to the nodal connectivity
+    /// \param Flag for zero based indexing in nodal coordinates
     mesh_reader(std::string const& input_file_name,
                 NodalOrdering const ordering,
                 IndexingBase const base,
@@ -90,51 +85,45 @@ public:
 
     ~mesh_reader() = default;
 
-    /**
-     * Return a map of the physical names and the element data.
-     * The physicalIds and the names are given by names().
-     * The value in the map is a list of ElementData objects
-     */
+    /// Return a map of the physical names and the element data.
+    /// The physicalIds and the names are given by names().
+    /// The value in the map is a list of ElementData objects
     auto const& mesh() const { return meshes; }
 
-    /** Return a list of the coordinates and Ids of the nodes */
+    /// Return a list of the coordinates and Ids of the nodes
     std::vector<node> const& nodes() const { return nodal_data; }
 
-    /** Return the physical names associated with the mesh */
+    /// Return the physical names associated with the mesh
     std::map<std::int32_t, std::string> const& names() const { return physicalGroupMap; }
 
-    /**
-     * Write out a distributed mesh in the Murge format which requires a
-     * local to global mapping for the distributed matrices from a finite
-     * element discretization.  This involves performing a reordering of
-     * each of the element nodal connectivity arrays from the global view
-     * that gmsh outputs and the local processor view that Murge expects.
-     */
-    void writeMeshToJson(bool const printIndices = true) const;
+    /// Write out a distributed mesh in the Murge format which requires a
+    /// local to global mapping for the distributed matrices from a finite
+    /// element discretization.  This involves performing a reordering of
+    /// each of the element nodal connectivity arrays from the global view
+    /// that gmsh outputs and the local processor view that Murge expects.
+    void write(bool const printIndices = true) const;
 
-    /** Return the number of decompositions in the mesh */
-    auto numberOfPartitions() const { return number_of_partitions; }
+    /// Return the number of decompositions in the mesh
+    auto numberOfPartitions() const { return m_partitions; }
 
 private:
-    /**
-     * Provide a reference to the nodes and dimensions that will be populated
-     * with the correct data based on the elementType
-     * @param elementTypeId gmsh element number
-     * @return number of nodes for the element
-     */
+    /// Provide a reference to the nodes and dimensions that will be populated
+    /// with the correct data based on the elementType
+    /// \param elementTypeId gmsh element number
+    /// \return number of nodes for the element
     int mapElementData(int const elementTypeId);
 
     /// Check the version of gmsh is support otherwise print out a warning
-    /// @param gmshVersion
+    /// \param gmshVersion
     void checkSupportedGmsh(float const gmshVersion);
 
-    /** This method fills the datastructures \sa ElementData \sa node */
+    /// This method fills the datastructures \sa element \sa node
     void fillMesh();
 
-    /** Return the local to global mapping for the nodal connectivities */
+    /// Return the local to global mapping for the nodal connectivities
     std::vector<std::int64_t> fillLocalToGlobalMap(Mesh const& process_mesh) const;
 
-    /** Reorder the mesh to for each process */
+    /// Reorder the mesh to for each process
     void reorderLocalMesh(Mesh& processMesh,
                           std::vector<std::int64_t> const& local_global_mapping) const;
 
