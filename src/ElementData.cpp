@@ -5,7 +5,7 @@
 #include <numeric>
 #include <stdexcept>
 
-namespace gmsh
+namespace imr
 {
 ElementData::ElementData(std::vector<int> nodalConnectivity,
                          std::vector<int> tags,
@@ -50,4 +50,4 @@ ElementData::ElementData(std::vector<int> nodalConnectivity,
         m_processOwner = m_partitionTags[1];
     }
 }
-}
+} // namespace imr

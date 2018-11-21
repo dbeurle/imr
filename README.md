@@ -2,9 +2,9 @@
 [![Coverage Status](https://coveralls.io/repos/github/dbeurle/GmshReader/badge.svg?branch=master)](https://coveralls.io/github/dbeurle/GmshReader?branch=master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-# GmshReader
+# Intermediate Mesh Representation
 
-A reader for Gmsh files for processing serial and decomposed grids.  This project is a command line interface (CLI) program and is designed to perform the off-line conversion of serial and decomposed grids into separate `JSON` mesh files.  These files can be readily imported into a numerical analysis program using `JSON` readers avoiding dealing with the  format of `.msh` files.
+A reader for Gmsh files for processing serial and decomposed grids.  This project is a command line interface (CLI) program and is designed to perform the off-line conversion of serial and decomposed grids into separate `JSON` mesh files.  These files can be readily imported into a numerical analysis program using `JSON` readers avoiding dealing with the format of `.msh` files.
 
 ![alt text](https://github.com/dbeurle/GmshReader/blob/master/doc/images/feti.png "FETI example")
 
@@ -38,5 +38,3 @@ Examples of usage are available in the project directory `examples`.  There is a
 # Issues
 
 If there are any issues in using the program, please open an issue using the GitHub tool above.  Bug reports, suggestions and improvements are very welcome!
-
-

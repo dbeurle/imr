@@ -1,23 +1,23 @@
-#define CATCH_CONFIG_MAIN // This tells Catch to provide a main() - only do this in one
-                          // cpp file
+#define CATCH_CONFIG_MAIN
+
 #include "GmshReader.hpp"
 #include "GmshReaderException.hpp"
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
-using namespace gmsh;
+using namespace imr;
 
-TEST_CASE("Ensure exceptions are thrown", "[exceptions]")
+TEST_CASE("Ensure exceptions are thrown")
 {
     SECTION("Throw a GmshReaderException for invalid mesh files")
     {
-        REQUIRE_THROWS_AS(gmsh::Reader("invalid_file_name",
-                                       Reader::NodalOrdering::Global,
-                                       Reader::IndexingBase::One),
-                          std::runtime_error);
+        REQUIRE_THROWS_AS(Reader("invalid_file_name",
+                                 Reader::NodalOrdering::Global,
+                                 Reader::IndexingBase::One),
+                          std::domain_error);
     }
 }
-TEST_CASE("Tests for basic ElementData", "[ElementData]")
+TEST_CASE("Tests for basic ElementData")
 {
     // gmsh element line definition is
     // 1 3 2 4 16 2 14 22 18
@@ -53,7 +53,7 @@ TEST_CASE("Tests for basic ElementData", "[ElementData]")
         REQUIRE(elementData.id() == 0);
     }
 }
-TEST_CASE("Tests for decomposed ElementData", "[ElementData]")
+TEST_CASE("Tests for decomposed ElementData")
 {
     // 1 3 5 999 1 2 3 -4 402 233 450 197
     constexpr auto id = 1, typeId = 3;

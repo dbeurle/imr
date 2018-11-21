@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace gmsh
+namespace imr
 {
 class ElementData
 {
@@ -61,4 +61,4 @@ inline void ElementData::convertToZeroBasedIndexing()
     for (auto& node : m_nodalConnectivity) --node;
     --m_id;
 }
-}
+} // namespace imr

@@ -7,6 +7,6 @@
 
 int main()
 {
-    using namespace gmsh;
+    using namespace imr;
     Reader reader("basic.msh", Reader::NodalOrdering::Global, Reader::IndexingBase::One);
 }

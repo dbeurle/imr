@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[])
 {
-    using namespace gmsh;
+    using namespace imr;
 
     // Parse the command line options and process the mesh
     try

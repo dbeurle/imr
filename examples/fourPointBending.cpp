@@ -5,10 +5,9 @@
 
 int main()
 {
-    using namespace gmsh;
-    Reader reader("fourPointBending.msh",
-                  Reader::NodalOrdering::Global,
-                  Reader::IndexingBase::One);
+    imr::Reader reader("fourPointBending.msh",
+                       imr::Reader::NodalOrdering::Global,
+                       imr::Reader::IndexingBase::One);
 
     reader.writeMeshToJson();
     std::cout << "Done!" << std::endl;

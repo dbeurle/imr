@@ -14,7 +14,7 @@
 
 #include <json/json.h>
 
-namespace gmsh
+namespace imr
 {
 Reader::Reader(std::string const& input_file_name,
                NodalOrdering const ordering,
@@ -36,7 +36,7 @@ void Reader::fillMesh()
 
     if (!gmsh_file.is_open())
     {
-        throw GmshReaderException("Input file " + input_file_name + " was not able to be opened");
+        throw std::domain_error("Input file " + input_file_name + " was not able to be opened");
     }
 
     std::string token, null;
@@ -184,8 +184,8 @@ int Reader::mapElementData(int const elementTypeId)
         case HEXAHEDRON64: return 64; break;
         case HEXAHEDRON125: return 125; break;
         default:
-            throw GmshReaderException("The elementTypeId " + std::to_string(elementTypeId) +
-                                      " is not implemented");
+            throw std::domain_error("The elementTypeId " + std::to_string(elementTypeId) +
+                                    " is not implemented");
     }
     return -1;
 }
@@ -471,4 +471,4 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
     writer << jsonwriter.write(event);
     writer.close();
 }
-}
+} // namespace imr

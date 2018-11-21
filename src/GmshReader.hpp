@@ -12,7 +12,7 @@
 
 #include "ElementData.hpp"
 
-namespace gmsh
+namespace imr
 {
 /** NodeData represents the geometry for a single node */
 struct NodeData
@@ -182,8 +182,9 @@ private:
     bool useZeroBasedIndexing;
     bool useLocalNodalConnectivity;
 
-    bool is_feti_format = true; //!< Output in FETI format
+    /// Output in FETI format
+    bool is_feti_format = true;
 
     int number_of_partitions = 1;
 };
-} // namespace gmsh
+} // namespace imr
