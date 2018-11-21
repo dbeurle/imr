@@ -75,10 +75,10 @@ public:
     ///        locally and there will be a local to global mapping provided in the
     ///        the mesh file in addition to the nodal connectivity
     /// \param Flag for zero based indexing in nodal coordinates
-    mesh_reader(std::string const& input_file_name,
-                NodalOrdering const ordering,
-                IndexingBase const base,
-                distributed const distributed_option = distributed::feti);
+    explicit mesh_reader(std::string const& input_file_name,
+                         NodalOrdering const ordering,
+                         IndexingBase const base,
+                         distributed const distributed_option);
 
     ~mesh_reader() = default;
 

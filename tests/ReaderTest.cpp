@@ -1,7 +1,6 @@
 #define CATCH_CONFIG_MAIN
 
 #include "mesh_reader.hpp"
-#include "GmshReaderException.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -11,9 +10,10 @@ TEST_CASE("Ensure exceptions are thrown")
 {
     SECTION("Throw a GmshReaderException for invalid mesh files")
     {
-        REQUIRE_THROWS_AS(Reader("invalid_file_name",
-                                 Reader::NodalOrdering::Global,
-                                 Reader::IndexingBase::One),
+        REQUIRE_THROWS_AS(mesh_reader("invalid_file_name",
+                                      NodalOrdering::Global,
+                                      IndexingBase::One,
+                                      distributed::feti),
                           std::domain_error);
     }
 }
@@ -21,18 +21,18 @@ TEST_CASE("Tests for basic ElementData")
 {
     // gmsh element line definition is
     // 1 3 2 4 16 2 14 22 18
-    std::vector<int> nodalConnectivity{2, 14, 22, 18};
+    std::vector<std::int64_t> node_indices{2, 14, 22, 18};
     std::vector<int> tags{4, 16};
 
     constexpr auto id = 1, typeId = 3;
 
-    ElementData elementData(nodalConnectivity, tags, typeId, id);
+    element elementData(node_indices, tags, typeId, id);
 
     SECTION("Data entry sanity check")
     {
         REQUIRE(elementData.id() == id);
         REQUIRE(elementData.typeId() == typeId);
-        REQUIRE(elementData.node_indices().size() == nodalConnectivity.size());
+        REQUIRE(elementData.node_indices().size() == node_indices.size());
         REQUIRE(elementData.physicalId() == 4);
         REQUIRE(elementData.geometricId() == 16);
     }
@@ -46,9 +46,9 @@ TEST_CASE("Tests for basic ElementData")
     SECTION("Check zero based indexing method")
     {
         elementData.convertToZeroBasedIndexing();
-        for (int i = 0; i < nodalConnectivity.size(); ++i)
+        for (std::size_t i = 0; i < node_indices.size(); ++i)
         {
-            REQUIRE(nodalConnectivity[i] - 1 == elementData.node_indices()[i]);
+            REQUIRE(node_indices[i] - 1 == elementData.node_indices()[i]);
         }
         REQUIRE(elementData.id() == 0);
     }
@@ -57,10 +57,10 @@ TEST_CASE("Tests for decomposed ElementData")
 {
     // 1 3 5 999 1 2 3 -4 402 233 450 197
     constexpr auto id = 1, typeId = 3;
-    std::vector<int> nodalConnectivity{402, 233, 450, 197};
+    std::vector<std::int64_t> node_indices{402, 233, 450, 197};
     std::vector<int> tags{999, 1, 2, 3, -4};
 
-    ElementData elementData(nodalConnectivity, tags, typeId, id);
+    element elementData(node_indices, tags, typeId, id);
 
     REQUIRE(elementData.partitionTags().size() == 3);
 
@@ -71,12 +71,15 @@ TEST_CASE("Tests for decomposed ElementData")
 }
 TEST_CASE("Tests for Reader")
 {
-    Reader reader("decomposed.msh", Reader::NodalOrdering::Local, Reader::IndexingBase::Zero);
+    mesh_reader reader("decomposed.msh",
+                       NodalOrdering::Local,
+                       IndexingBase::Zero,
+                       distributed::feti);
 
     REQUIRE(reader.numberOfPartitions() == 4);
 
     // Check the physical names are in the map
-    REQUIRE(reader.names().find(1) != reader.names().end());
+    REQUIRE(reader.names().find(1) != end(reader.names()));
     // REQUIRE(reader.names().find(2) != reader.names().end());
 
     REQUIRE(reader.names().find(1)->second == "domain");
@@ -84,5 +87,5 @@ TEST_CASE("Tests for Reader")
 
     REQUIRE(reader.nodes().size() == 9);
 
-    reader.writeMeshToJson(false);
+    reader.write(false);
 }

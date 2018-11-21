@@ -7,7 +7,7 @@
 
 namespace imr
 {
-element::element(std::vector<std::int64_t>&& node_indices,
+element::element(std::vector<std::int64_t> node_indices,
                  std::vector<std::int32_t> tags,
                  int const typeId,
                  int const id)
@@ -45,8 +45,8 @@ element::element(std::vector<std::int64_t>&& node_indices,
             m_partitionTags.push_back(tags[i]);
         }
 
-        m_maxProcessId = std::abs(*std::max_element(m_partitionTags.begin(),
-                                                    m_partitionTags.end(),
+        m_maxProcessId = std::abs(*std::max_element(begin(m_partitionTags),
+                                                    end(m_partitionTags),
                                                     [](auto const a, auto const b) {
                                                         return std::abs(a) < std::abs(b);
                                                     }));
@@ -57,10 +57,9 @@ element::element(std::vector<std::int64_t>&& node_indices,
 
 void element::convertToZeroBasedIndexing()
 {
-    for (auto& node : m_indices)
-    {
-        --node;
-    }
+    std::transform(begin(m_indices), end(m_indices), begin(m_indices), [](auto const index) {
+        return index - 1;
+    });
     --m_id;
 }
 

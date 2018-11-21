@@ -12,7 +12,7 @@ public:
     enum Property { Physical = 0, Geometric };
 
 public:
-    explicit element(std::vector<std::int64_t>&& node_indices,
+    explicit element(std::vector<std::int64_t> node_indices,
                      std::vector<int> tags,
                      int const typeId,
                      int const id);

@@ -9,7 +9,10 @@ int main(int argc, char** argv)
 
     std::cout << file << std::endl;
 
-    imr::mesh_reader reader(file, imr::NodalOrdering::Global, imr::IndexingBase::One);
+    imr::mesh_reader reader(file,
+                            imr::NodalOrdering::Global,
+                            imr::IndexingBase::One,
+                            imr::distributed::feti);
 
     reader.write();
 

@@ -18,7 +18,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 option(ENABLE_DEBUG "Enable debug information" OFF)
 option(ENABLE_COVERAGE "Set compiler flag for coverage analysis" OFF)
 
-option(ENABLE_TEST "Enable the test suite" OFF)
+option(ENABLE_TEST "Enable the test suite" ON)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts ${CMAKE_MODULE_PATH})
 if(ENABLE_COVERAGE)
@@ -37,6 +37,7 @@ ENDIF(ENABLE_DEBUG)
 
 if (ENABLE_TEST)
     include(CTest)
+    enable_testing()
 
     find_package(Catch2 2.3)
 
