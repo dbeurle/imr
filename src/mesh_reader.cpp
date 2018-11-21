@@ -123,7 +123,7 @@ void mesh_reader::fillMesh()
                     {
                         auto const owner_sharer = std::make_pair(tags[3], std::abs(tags[i]));
 
-                        auto const& connectivity = elementData.nodalConnectivity();
+                        auto const& connectivity = elementData.node_indices();
 
                         interfaceElementMap[owner_sharer].insert(std::begin(connectivity),
                                                                  std::end(connectivity));
@@ -261,7 +261,7 @@ std::vector<std::int64_t> mesh_reader::fillLocalToGlobalMap(Mesh const& process_
     {
         for (auto const& element : mesh.second)
         {
-            auto const& nodes = element.nodalConnectivity();
+            auto const& nodes = element.node_indices();
             std::copy(std::begin(nodes), std::end(nodes), std::back_inserter(local_global_mapping));
         }
     }
@@ -282,7 +282,7 @@ void mesh_reader::reorderLocalMesh(Mesh& process_mesh,
     {
         for (auto& element : mesh.second)
         {
-            for (auto& node : element.nodalConnectivity())
+            for (auto& node : element.node_indices())
             {
                 auto const found = std::lower_bound(std::begin(local_global_mapping),
                                                     std::end(local_global_mapping),
@@ -356,7 +356,7 @@ void mesh_reader::writeInJsonFormat(Mesh const& process_mesh,
         {
             Json::Value connectivity(Json::arrayValue);
 
-            for (auto const& node : element_data.nodalConnectivity())
+            for (auto const& node : element_data.node_indices())
             {
                 connectivity.append(node);
             }

@@ -39,9 +39,9 @@ public:
         return m_isElementShared && m_partitionTags[0] > 1;
     }
 
-    std::vector<std::int64_t> const& nodalConnectivity() const noexcept { return m_indices; }
+    std::vector<std::int64_t> const& node_indices() const noexcept { return m_indices; }
 
-    std::vector<std::int64_t>& nodalConnectivity() noexcept { return m_indices; }
+    std::vector<std::int64_t>& node_indices() noexcept { return m_indices; }
 
     std::vector<int> const& partitionTags() const noexcept { return m_partitionTags; }
 

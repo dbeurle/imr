@@ -32,7 +32,7 @@ TEST_CASE("Tests for basic ElementData")
     {
         REQUIRE(elementData.id() == id);
         REQUIRE(elementData.typeId() == typeId);
-        REQUIRE(elementData.nodalConnectivity().size() == nodalConnectivity.size());
+        REQUIRE(elementData.node_indices().size() == nodalConnectivity.size());
         REQUIRE(elementData.physicalId() == 4);
         REQUIRE(elementData.geometricId() == 16);
     }
@@ -48,7 +48,7 @@ TEST_CASE("Tests for basic ElementData")
         elementData.convertToZeroBasedIndexing();
         for (int i = 0; i < nodalConnectivity.size(); ++i)
         {
-            REQUIRE(nodalConnectivity[i] - 1 == elementData.nodalConnectivity()[i]);
+            REQUIRE(nodalConnectivity[i] - 1 == elementData.node_indices()[i]);
         }
         REQUIRE(elementData.id() == 0);
     }
