@@ -54,4 +54,14 @@ element::element(std::vector<std::int64_t>&& node_indices,
         m_processOwner = m_partitionTags[1];
     }
 }
+
+void element::convertToZeroBasedIndexing()
+{
+    for (auto& node : m_indices)
+    {
+        --node;
+    }
+    --m_id;
+}
+
 } // namespace imr

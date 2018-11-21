@@ -49,7 +49,7 @@ public:
     void convertToZeroBasedIndexing();
 
 private:
-    std::vector<int> m_partitionTags;
+    std::vector<std::int32_t> m_partitionTags;
     std::vector<std::int64_t> m_indices;
 
     int m_physicalId;
@@ -63,12 +63,4 @@ private:
     bool m_isElementShared = false;
 };
 
-inline void element::convertToZeroBasedIndexing()
-{
-    for (auto& node : m_indices)
-    {
-        --node;
-    }
-    --m_id;
-}
 } // namespace imr
