@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 
-#include "GmshReader.hpp"
+#include "mesh_reader.hpp"
 #include "GmshReaderException.hpp"
 
 #include <catch2/catch.hpp>

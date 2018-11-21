@@ -1,5 +1,5 @@
 
-#include "GmshReader.hpp"
+#include "mesh_reader.hpp"
 
 #include <iostream>
 
@@ -9,7 +9,7 @@ int main(int argc, char** argv)
 
     std::cout << file << std::endl;
 
-    imr::Reader reader(file, imr::Reader::NodalOrdering::Global, imr::Reader::IndexingBase::One);
+    imr::mesh_reader reader(file, imr::NodalOrdering::Global, imr::IndexingBase::One);
 
     reader.writeMeshToJson();
 

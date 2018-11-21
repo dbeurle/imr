@@ -1,5 +1,5 @@
 
-#include "ElementData.hpp"
+#include "element.hpp"
 
 #include <algorithm>
 #include <numeric>
@@ -7,19 +7,20 @@
 
 namespace imr
 {
-ElementData::ElementData(std::vector<int> nodalConnectivity,
-                         std::vector<int> tags,
-                         int const typeId,
-                         int const id)
-    : m_nodalConnectivity(nodalConnectivity), m_typeId(typeId), m_id(id)
+element::element(std::vector<std::int64_t>&& node_indices,
+                 std::vector<int> tags,
+                 int const typeId,
+                 int const id)
+    : m_indices(std::move(node_indices)), m_typeId(typeId), m_id(id)
 {
     if (tags.empty())
     {
         throw std::runtime_error("Element tags vector not filled\n");
     }
-    if (nodalConnectivity.empty())
+
+    if (m_indices.empty())
     {
-        throw std::runtime_error("Nodal connectivity vector not filled\n");
+        throw std::runtime_error("Node indices vector not filled\n");
     }
 
     // Position in tag array
@@ -39,7 +40,10 @@ ElementData::ElementData(std::vector<int> nodalConnectivity,
         auto const shared_between = tags[2];
         m_partitionTags.reserve(shared_between);
 
-        for (auto i = 2; i < tags.size(); i++) m_partitionTags.push_back(tags[i]);
+        for (auto i = 2; i < tags.size(); i++)
+        {
+            m_partitionTags.push_back(tags[i]);
+        }
 
         m_maxProcessId = std::abs(*std::max_element(m_partitionTags.begin(),
                                                     m_partitionTags.end(),

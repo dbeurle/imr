@@ -1,9 +1,5 @@
-/*
- * For licensing please refer to the LICENSE.md file
- */
 
-#include "GmshReader.hpp"
-#include "GmshReaderException.hpp"
+#include "mesh_reader.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -16,10 +12,10 @@
 
 namespace imr
 {
-Reader::Reader(std::string const& input_file_name,
-               NodalOrdering const ordering,
-               IndexingBase const base,
-               distributed const distributed_option)
+mesh_reader::mesh_reader(std::string const& input_file_name,
+                         NodalOrdering const ordering,
+                         IndexingBase const base,
+                         distributed const distributed_option)
     : input_file_name(input_file_name),
       useZeroBasedIndexing(base == IndexingBase::Zero),
       useLocalNodalConnectivity(ordering == NodalOrdering::Local),
@@ -28,7 +24,7 @@ Reader::Reader(std::string const& input_file_name,
     fillMesh();
 }
 
-void Reader::fillMesh()
+void mesh_reader::fillMesh()
 {
     auto const start = std::chrono::high_resolution_clock::now();
 
@@ -99,21 +95,21 @@ void Reader::fillMesh()
 
                 auto const numberOfNodes = mapElementData(elementTypeId);
 
-                list tags(numberOfTags, 0);
-                list nodalConnectivity(numberOfNodes, 0);
+                std::vector<std::int32_t> tags(numberOfTags, 0);
+                std::vector<std::int64_t> node_indices(numberOfNodes, 0);
 
                 for (auto& tag : tags)
                 {
                     gmsh_file >> tag;
                 }
-                for (auto& nodeId : nodalConnectivity)
+                for (auto& node_index : node_indices)
                 {
-                    gmsh_file >> nodeId;
+                    gmsh_file >> node_index;
                 }
 
                 auto const physicalId = tags[0];
 
-                ElementData elementData(std::move(nodalConnectivity), tags, elementTypeId, id);
+                element elementData(std::move(node_indices), tags, elementTypeId, id);
 
                 // Update the total number of partitions on the fly
                 number_of_partitions = std::max(elementData.maxProcessId(), number_of_partitions);
@@ -145,7 +141,7 @@ void Reader::fillMesh()
     std::cout << "Mesh data structure filled in " << elapsed_seconds.count() << "s\n";
 }
 
-int Reader::mapElementData(int const elementTypeId)
+int mesh_reader::mapElementData(int const elementTypeId)
 {
     // Return the number of local nodes per element
     switch (elementTypeId)
@@ -190,7 +186,7 @@ int Reader::mapElementData(int const elementTypeId)
     return -1;
 }
 
-void Reader::checkSupportedGmsh(float const gmshVersion)
+void mesh_reader::checkSupportedGmsh(float const gmshVersion)
 {
     if (gmshVersion < 2.2)
     {
@@ -199,7 +195,7 @@ void Reader::checkSupportedGmsh(float const gmshVersion)
     }
 }
 
-void Reader::writeMeshToJson(bool const print_indices) const
+void mesh_reader::writeMeshToJson(bool const print_indices) const
 {
     for (auto partition = 0; partition < number_of_partitions; ++partition)
     {
@@ -257,9 +253,9 @@ void Reader::writeMeshToJson(bool const print_indices) const
     }
 }
 
-list Reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
+std::vector<std::int64_t> mesh_reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
 {
-    list local_global_mapping;
+    std::vector<std::int64_t> local_global_mapping;
 
     for (auto const& mesh : process_mesh)
     {
@@ -279,7 +275,8 @@ list Reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
     return local_global_mapping;
 }
 
-void Reader::reorderLocalMesh(Mesh& process_mesh, list const& local_global_mapping) const
+void mesh_reader::reorderLocalMesh(Mesh& process_mesh,
+                                   std::vector<std::int64_t> const& local_global_mapping) const
 {
     for (auto& mesh : process_mesh)
     {
@@ -299,9 +296,10 @@ void Reader::reorderLocalMesh(Mesh& process_mesh, list const& local_global_mappi
     }
 }
 
-std::vector<NodeData> Reader::fillLocalNodeList(list const& local_global_mapping) const
+std::vector<node>
+mesh_reader::fillLocalNodeList(std::vector<std::int64_t> const& local_global_mapping) const
 {
-    std::vector<NodeData> local_nodal_data;
+    std::vector<node> local_nodal_data;
     local_nodal_data.reserve(local_global_mapping.size());
 
     for (auto const& node_index : local_global_mapping)
@@ -311,12 +309,12 @@ std::vector<NodeData> Reader::fillLocalNodeList(list const& local_global_mapping
     return local_nodal_data;
 }
 
-void Reader::writeInJsonFormat(Mesh const& process_mesh,
-                               list const& localToGlobalMapping,
-                               std::vector<NodeData> const& nodalCoordinates,
-                               int const partition_number,
-                               bool const is_decomposed,
-                               bool const print_indices) const
+void mesh_reader::writeInJsonFormat(Mesh const& process_mesh,
+                                    std::vector<std::int64_t> const& localToGlobalMapping,
+                                    std::vector<node> const& nodalCoordinates,
+                                    int const partition_number,
+                                    bool const is_decomposed,
+                                    bool const print_indices) const
 {
     // Write out each file to Json format
     Json::Value event;
@@ -342,7 +340,10 @@ void Reader::writeInJsonFormat(Mesh const& process_mesh,
         }
         nodeGroupCoordinates.append(coordinates);
 
-        if (print_indices) nodeGroup["Indices"].append(node.id);
+        if (print_indices)
+        {
+            nodeGroup["Indices"].append(node.id);
+        }
     }
     event["Nodes"].append(nodeGroup);
 

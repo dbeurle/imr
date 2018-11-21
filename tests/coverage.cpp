@@ -2,7 +2,7 @@
 
 #include <catch.hpp>
 
-#include "GmshReader.hpp"
+#include "mesh_reader.hpp"
 #include "GmshReaderException.hpp"
 
 int main()

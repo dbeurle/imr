@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(GMSH_READER_LIBRARIES_INSTALL_PATH "lib")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-option(ENABLE_DEBUG "enables debug information" OFF)
+option(ENABLE_DEBUG "Enable debug information" OFF)
 option(ENABLE_COVERAGE "Set compiler flag for coverage analysis" OFF)
 
 option(ENABLE_TEST "Enable the test suite" OFF)
@@ -50,9 +50,7 @@ endif()
 add_subdirectory(src)
 add_subdirectory(examples)
 
-add_executable(gmshreader src/main.cpp)
+add_executable(imr src/main.cpp)
+target_link_libraries(imr reader ${Boost_LIBRARIES})
 
-target_link_libraries(gmshreader GmshReader ${Boost_LIBRARIES})
-
-install(TARGETS gmshreader
-        RUNTIME DESTINATION bin)
+install(TARGETS imr RUNTIME DESTINATION bin)

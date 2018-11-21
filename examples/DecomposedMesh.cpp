@@ -1,13 +1,13 @@
 
-#include "GmshReader.hpp"
+#include "mesh_reader.hpp"
 
 #include <iostream>
 
 int main()
 {
-    imr::Reader reader("decomposed.msh",
-                       imr::Reader::NodalOrdering::Local,
-                       imr::Reader::IndexingBase::Zero);
+    imr::mesh_reader reader("decomposed.msh",
+                       imr::NodalOrdering::Local,
+                       imr::IndexingBase::Zero);
     reader.writeMeshToJson();
 
     std::cout << "Done!\n";

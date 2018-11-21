@@ -1,5 +1,5 @@
 
-#include "GmshReader.hpp"
+#include "mesh_reader.hpp"
 
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -18,8 +18,9 @@ int main(int argc, char* argv[])
 
         visible.add_options()("help", "Print help messages");
 
-        visible.add_options()(
-            "zero-based", "Use zero based indexing for elements and nodes.  Default: one-based.");
+        visible.add_options()("zero-based",
+                              "Use zero based indexing for elements and nodes.  Default: "
+                              "one-based.");
 
         visible.add_options()("local-ordering",
                               "For distributed meshes, each processor has local indexing "
@@ -55,36 +56,38 @@ int main(int argc, char* argv[])
             {
                 std::cout << "\nA serial and parallel gmsh processing tool to convert "
                              ".msh to .json files\n\n"
-                          << "gmshreader [Options] filename.msh\n\n"
+                          << "imr [Options] filename.msh\n\n"
                           << visible << std::endl;
                 return 0;
             }
             po::notify(vm); // throws on error, so do after help in case
                             // there are any problems
         }
-        catch (po::error& e)
+        catch (po::error& error_message)
         {
-            std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
+            std::cerr << "ERROR: " << error_message.what() << "\n" << std::endl;
             std::cerr << visible << std::endl;
             return 1;
         }
 
-        Reader::IndexingBase const indexing =
-            vm.count("zero-based") > 0 ? Reader::IndexingBase::Zero : Reader::IndexingBase::One;
+        IndexingBase const indexing = vm.count("zero-based") > 0 ? IndexingBase::Zero
+                                                                 : IndexingBase::One;
 
-        Reader::NodalOrdering const ordering = vm.count("local-ordering") > 0
-                                                   ? Reader::NodalOrdering::Local
-                                                   : Reader::NodalOrdering::Global;
+        NodalOrdering const ordering = vm.count("local-ordering") > 0 ? NodalOrdering::Local
+                                                                      : NodalOrdering::Global;
 
-        Reader::distributed const distributed_option = vm.count("interprocess-format") > 0
-                                                           ? Reader::distributed::interprocess
-                                                           : Reader::distributed::feti;
+        distributed const distributed_option = vm.count("interprocess-format") > 0
+                                                   ? distributed::interprocess
+                                                   : distributed::feti;
+
+        std::cout << "\nPerforming mesh conversion with "
+                  << (indexing == IndexingBase::Zero ? "zero" : "one") << " based indexing\n\n";
 
         if (vm.count("input-file"))
         {
             for (auto const& input : vm["input-file"].as<std::vector<std::string>>())
             {
-                Reader reader(input, ordering, indexing, distributed_option);
+                mesh_reader reader(input, ordering, indexing, distributed_option);
                 reader.writeMeshToJson(vm.count("with-indices") > 0);
             }
         }
@@ -93,9 +96,9 @@ int main(int argc, char* argv[])
             throw std::runtime_error("Missing \".msh\" input file!\n");
         }
     }
-    catch (std::exception& e)
+    catch (std::exception& error)
     {
-        std::cerr << "Unhandled Exception reached the top of main: " << e.what()
+        std::cerr << "Unhandled Exception reached the top of main: " << error.what()
                   << ", application will now exit" << std::endl;
         return 1;
     }

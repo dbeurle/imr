@@ -10,40 +10,31 @@
 #include <string>
 #include <vector>
 
-#include "ElementData.hpp"
+#include "element.hpp"
+#include "node.hpp"
 
 namespace imr
 {
-/** NodeData represents the geometry for a single node */
-struct NodeData
-{
-    std::int64_t id;
-    std::array<double, 3> coordinates;
-};
+/// Mesh partition nodal connectivity
+enum class NodalOrdering { Local, Global };
 
-using list = std::vector<std::int32_t>;
+/// Nodal numbering to be zero or one based
+enum class IndexingBase { Zero, One };
 
-/**
- * Reader parses Gmsh format and returns the data structures of the mesh
- * in a json format for easier processing
- */
-class Reader
+/// Ordering for distribution of mshes
+enum class distributed { feti, interprocess };
+
+/// mesh_reader parses Gmsh format and returns the data structures of the mesh
+/// in a json format for easier processing
+class mesh_reader
 {
 public:
-    using Value = std::vector<ElementData>;
+    using Value = std::vector<element>;
     using Mesh  = std::map<std::pair<std::string, std::int32_t>, Value>;
 
     using owner_sharer_t = std::pair<std::int32_t, std::int32_t>;
 
 public:
-    /** Mesh partition nodal connectivity */
-    enum class NodalOrdering { Local, Global };
-
-    /** Nodal numbering to be zero or one based */
-    enum class IndexingBase { Zero, One };
-
-    enum class distributed { feti, interprocess };
-
     /** Gmsh element numbering scheme */
     enum ELEMENT_TYPE_ID {
         // Standard linear elements
@@ -92,12 +83,12 @@ public:
               the mesh file in addition to the nodal connectivity
      * @param Flag for zero based indexing in nodal coordinates
      */
-    Reader(std::string const& input_file_name,
-           NodalOrdering const,
-           IndexingBase const,
-           distributed const distributed_option = distributed::feti);
+    mesh_reader(std::string const& input_file_name,
+                NodalOrdering const ordering,
+                IndexingBase const base,
+                distributed const distributed_option = distributed::feti);
 
-    ~Reader() = default;
+    ~mesh_reader() = default;
 
     /**
      * Return a map of the physical names and the element data.
@@ -107,7 +98,7 @@ public:
     auto const& mesh() const { return meshes; }
 
     /** Return a list of the coordinates and Ids of the nodes */
-    std::vector<NodeData> const& nodes() const { return nodal_data; }
+    std::vector<node> const& nodes() const { return nodal_data; }
 
     /** Return the physical names associated with the mesh */
     std::map<std::int32_t, std::string> const& names() const { return physicalGroupMap; }
@@ -133,37 +124,35 @@ private:
      */
     int mapElementData(int const elementTypeId);
 
-    /**
-     * Check the version of gmsh is support otherwise print out a warning
-     * @param gmshVersion
-     */
+    /// Check the version of gmsh is support otherwise print out a warning
+    /// @param gmshVersion
     void checkSupportedGmsh(float const gmshVersion);
 
-    /** This method fills the datastructures \sa ElementData \sa NodeData */
+    /** This method fills the datastructures \sa ElementData \sa node */
     void fillMesh();
 
     /** Return the local to global mapping for the nodal connectivities */
-    list fillLocalToGlobalMap(Mesh const& process_mesh) const;
+    std::vector<std::int64_t> fillLocalToGlobalMap(Mesh const& process_mesh) const;
 
     /** Reorder the mesh to for each process */
-    void reorderLocalMesh(Mesh& processMesh, list const& local_global_mapping) const;
+    void reorderLocalMesh(Mesh& processMesh,
+                          std::vector<std::int64_t> const& local_global_mapping) const;
 
-    /**
-     * Gather the local process nodal coordinates using the local to global mapping.
-     * This is required to reduce the number of coordinates for each process.
-     * \sa writeInJsonFormat
-     */
-    std::vector<NodeData> fillLocalNodeList(list const& local_global_mapping) const;
+    /// Gather the local process nodal coordinates using the local to global mapping.
+    /// This is required to reduce the number of coordinates for each process.
+    /// \sa writeInJsonFormat
+    std::vector<node>
+    fillLocalNodeList(std::vector<std::int64_t> const& local_global_mapping) const;
 
     void writeInJsonFormat(Mesh const& process_mesh,
-                           list const& local_global_mapping,
-                           std::vector<NodeData> const& nodalCoordinates,
+                           std::vector<std::int64_t> const& local_global_mapping,
+                           std::vector<node> const& nodalCoordinates,
                            int const process_number,
                            bool const is_distributed,
                            bool const printIndices) const;
 
 private:
-    std::vector<NodeData> nodal_data;
+    std::vector<node> nodal_data;
 
     Mesh meshes;
 
@@ -177,7 +166,8 @@ private:
 
     std::map<std::int32_t, std::string> physicalGroupMap;
 
-    std::string input_file_name; //!< File name of gmsh file
+    /// File name of gmsh file
+    std::string input_file_name;
 
     bool useZeroBasedIndexing;
     bool useLocalNodalConnectivity;
