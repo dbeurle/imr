@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 
     imr::mesh_reader reader(file, imr::NodalOrdering::Global, imr::IndexingBase::One);
 
-    reader.writeMeshToJson();
+    reader.write();
 
     std::cout << "This is my first example" << std::endl;
 }

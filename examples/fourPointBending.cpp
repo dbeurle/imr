@@ -9,6 +9,6 @@ int main()
                        imr::NodalOrdering::Global,
                        imr::IndexingBase::One);
 
-    reader.writeMeshToJson();
+    reader.write();
     std::cout << "Done!" << std::endl;
 }
