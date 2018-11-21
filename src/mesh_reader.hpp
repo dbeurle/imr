@@ -20,55 +20,53 @@ enum class IndexingBase { Zero, One };
 /// Ordering for distribution of mshes
 enum class distributed { feti, interprocess };
 
+/// Gmsh element numbering scheme
+enum ELEMENT_TYPE_ID {
+    // Standard linear elements
+    LINE2 = 1,
+    TRIANGLE3,
+    QUADRILATERAL4,
+    TETRAHEDRON4,
+    HEXAHEDRON8,
+    PRISM6,
+    PYRAMID5,
+    // Quadratic elements
+    LINE3,
+    TRIANGLE6,
+    QUADRILATERAL9, // 4 vertex, 4 edges and 1 face node
+    TETRAHEDRON10,
+    HEXAHEDRON27,
+    PRISM18,
+    PYRAMID14,
+    POINT = 15,
+    QUADRILATERAL8,
+    HEXAHEDRON20,
+    PRISM15,
+    PYRAMID13,
+    TRIANGLE9 = 20,
+    TRIANGLE10,
+    TRIANGLE12,
+    TRIANGLE15,
+    TRIANGLE15_IC, // Incomplete 15 node triangle
+    TRIANGLE21 = 25,
+    EDGE4,
+    EDGE5,
+    EDGE6,
+    TETRAHEDRON20,
+    TETRAHEDRON35,
+    TETRAHEDRON56,
+    HEXAHEDRON64 = 92,
+    HEXAHEDRON125
+};
+
 /// mesh_reader parses Gmsh format and returns the data structures of the mesh
 /// in a json format for easier processing
 class mesh_reader
 {
 public:
-    using Value = std::vector<element>;
-    using Mesh  = std::map<std::pair<std::string, std::int32_t>, Value>;
+    using Mesh = std::map<std::pair<std::string, std::int32_t>, std::vector<element>>;
 
     using owner_sharer_t = std::pair<std::int32_t, std::int32_t>;
-
-public:
-    /** Gmsh element numbering scheme */
-    enum ELEMENT_TYPE_ID {
-        // Standard linear elements
-        LINE2 = 1,
-        TRIANGLE3,
-        QUADRILATERAL4,
-        TETRAHEDRON4,
-        HEXAHEDRON8,
-        PRISM6,
-        PYRAMID5,
-        // Quadratic elements
-        LINE3,
-        TRIANGLE6,
-        QUADRILATERAL9, // 4 vertex, 4 edges and 1 face node
-        TETRAHEDRON10,
-        HEXAHEDRON27,
-        PRISM18,
-        PYRAMID14,
-        POINT = 15,
-        QUADRILATERAL8,
-        HEXAHEDRON20,
-        PRISM15,
-        PYRAMID13,
-        TRIANGLE9 = 20,
-        TRIANGLE10,
-        TRIANGLE12,
-        TRIANGLE15,
-        TRIANGLE15_IC, // Incomplete 15 node triangle
-        TRIANGLE21 = 25,
-        EDGE4,
-        EDGE5,
-        EDGE6,
-        TETRAHEDRON20,
-        TETRAHEDRON35,
-        TETRAHEDRON56,
-        HEXAHEDRON64 = 92,
-        HEXAHEDRON125
-    };
 
 public:
     /// \param File name of gmsh mesh
@@ -132,12 +130,12 @@ private:
     std::vector<node>
     fillLocalNodeList(std::vector<std::int64_t> const& local_global_mapping) const;
 
-    void writeInJsonFormat(Mesh const& process_mesh,
-                           std::vector<std::int64_t> const& local_global_mapping,
-                           std::vector<node> const& nodalCoordinates,
-                           int const process_number,
-                           bool const is_distributed,
-                           bool const printIndices) const;
+    void write_json(Mesh const& process_mesh,
+                    std::vector<std::int64_t> const& local_global_mapping,
+                    std::vector<node> const& nodalCoordinates,
+                    int const process_number,
+                    bool const is_distributed,
+                    bool const printIndices) const;
 
 private:
     std::vector<node> nodal_data;
@@ -163,6 +161,6 @@ private:
     /// Output in FETI format
     bool is_feti_format = true;
 
-    int number_of_partitions = 1;
+    int m_partitions = 1;
 };
 } // namespace imr

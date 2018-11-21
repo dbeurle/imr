@@ -87,7 +87,7 @@ void mesh_reader::fillMesh()
             int elementIds;
             gmsh_file >> elementIds;
 
-            for (int elementId = 0; elementId < elementIds; elementId++)
+            for (std::int64_t elementId = 0; elementId < elementIds; elementId++)
             {
                 int id = 0, numberOfTags = 0, elementTypeId = 0;
 
@@ -102,6 +102,7 @@ void mesh_reader::fillMesh()
                 {
                     gmsh_file >> tag;
                 }
+
                 for (auto& node_index : node_indices)
                 {
                     gmsh_file >> node_index;
@@ -112,7 +113,7 @@ void mesh_reader::fillMesh()
                 element elementData(std::move(node_indices), tags, elementTypeId, id);
 
                 // Update the total number of partitions on the fly
-                number_of_partitions = std::max(elementData.maxProcessId(), number_of_partitions);
+                m_partitions = std::max(elementData.maxProcessId(), m_partitions);
 
                 // Copy the element data into the mesh structure
                 meshes[{physicalGroupMap[physicalId], elementTypeId}].push_back(elementData);
@@ -132,8 +133,8 @@ void mesh_reader::fillMesh()
             }
         }
     }
-    std::cout << std::string(2, ' ') << "A total number of " << number_of_partitions
-              << " partitions was found\n";
+    std::cout << std::string(2, ' ') << "A total number of " << m_partitions
+              << " partitions were found\n";
 
     auto const end = std::chrono::high_resolution_clock::now();
 
@@ -195,9 +196,9 @@ void mesh_reader::checkSupportedGmsh(float const gmshVersion)
     }
 }
 
-void mesh_reader::writeMeshToJson(bool const print_indices) const
+void mesh_reader::write(bool const print_indices) const
 {
-    for (auto partition = 0; partition < number_of_partitions; ++partition)
+    for (int partition = 0; partition < m_partitions; ++partition)
     {
         Mesh process_mesh;
 
@@ -228,9 +229,15 @@ void mesh_reader::writeMeshToJson(bool const print_indices) const
         // element ids of the data structures
         if (useZeroBasedIndexing)
         {
-            for (auto& l2g : local_global_mapping) --l2g;
+            std::transform(begin(local_global_mapping),
+                           end(local_global_mapping),
+                           begin(local_global_mapping),
+                           [](auto const value) { return value - 1; });
 
-            for (auto& localNode : local_nodes) --localNode.id;
+            for (auto& localNode : local_nodes)
+            {
+                --localNode.id;
+            }
 
             for (auto& mesh : process_mesh)
             {
@@ -241,12 +248,12 @@ void mesh_reader::writeMeshToJson(bool const print_indices) const
             }
         }
 
-        writeInJsonFormat(process_mesh,
-                          local_global_mapping,
-                          local_nodes,
-                          partition,
-                          number_of_partitions > 1,
-                          print_indices);
+        write_json(process_mesh,
+                   local_global_mapping,
+                   local_nodes,
+                   partition,
+                   m_partitions > 1,
+                   print_indices);
 
         std::cout << std::string(2, ' ') << "Finished writing out JSON file for mesh partition "
                   << partition << "\n";
@@ -309,20 +316,23 @@ mesh_reader::fillLocalNodeList(std::vector<std::int64_t> const& local_global_map
     return local_nodal_data;
 }
 
-void mesh_reader::writeInJsonFormat(Mesh const& process_mesh,
-                                    std::vector<std::int64_t> const& localToGlobalMapping,
-                                    std::vector<node> const& nodalCoordinates,
-                                    int const partition_number,
-                                    bool const is_decomposed,
-                                    bool const print_indices) const
+void mesh_reader::write_json(Mesh const& process_mesh,
+                             std::vector<std::int64_t> const& localToGlobalMapping,
+                             std::vector<node> const& nodalCoordinates,
+                             int const partition_number,
+                             bool const is_decomposed,
+                             bool const print_indices) const
 {
     // Write out each file to Json format
     Json::Value event;
 
-    std::string output_file_name =
-        input_file_name.substr(0, input_file_name.find_last_of('.')) + ".mesh";
+    std::string output_file_name = input_file_name.substr(0, input_file_name.find_last_of('.')) +
+                                   ".mesh";
 
-    if (is_decomposed) output_file_name += std::to_string(partition_number);
+    if (is_decomposed)
+    {
+        output_file_name += std::to_string(partition_number);
+    }
 
     std::fstream writer;
     writer.open(output_file_name, std::ios::out);
@@ -412,14 +422,14 @@ void mesh_reader::writeInJsonFormat(Mesh const& process_mesh,
 
                         interface_group["NodeIds"].append(nodal_numbers);
 
-                        interface_group["Master"] =
-                            useZeroBasedIndexing ? master_partition - 1 : master_partition;
+                        interface_group["Master"] = useZeroBasedIndexing ? master_partition - 1
+                                                                         : master_partition;
 
-                        interface_group["Slave"] =
-                            useZeroBasedIndexing ? slave_partition - 1 : slave_partition;
+                        interface_group["Slave"] = useZeroBasedIndexing ? slave_partition - 1
+                                                                        : slave_partition;
 
-                        interface_group["Value"] =
-                            partition_number == master_partition - 1 ? 1 : -1;
+                        interface_group["Value"] = partition_number == master_partition - 1 ? 1
+                                                                                            : -1;
 
                         interface_group["GlobalStartId"] = globalStartId;
 

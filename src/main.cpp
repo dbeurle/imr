@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
             for (auto const& input : vm["input-file"].as<std::vector<std::string>>())
             {
                 mesh_reader reader(input, ordering, indexing, distributed_option);
-                reader.writeMeshToJson(vm.count("with-indices") > 0);
+                reader.write(vm.count("with-indices") > 0);
             }
         }
         else
