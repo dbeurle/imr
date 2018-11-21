@@ -8,7 +8,7 @@
 namespace imr
 {
 element::element(std::vector<std::int64_t>&& node_indices,
-                 std::vector<int> tags,
+                 std::vector<std::int32_t> tags,
                  int const typeId,
                  int const id)
     : m_indices(std::move(node_indices)), m_typeId(typeId), m_id(id)

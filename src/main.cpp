@@ -81,7 +81,8 @@ int main(int argc, char* argv[])
                                                    : distributed::feti;
 
         std::cout << "\nPerforming mesh conversion with "
-                  << (indexing == IndexingBase::Zero ? "zero" : "one") << " based indexing\n\n";
+                  << (indexing == IndexingBase::Zero ? "zero" : "one")
+                  << " based indexing for node indices\n\n";
 
         if (vm.count("input-file"))
         {
