@@ -8,5 +8,5 @@
 int main()
 {
     using namespace imr;
-    Reader reader("basic.msh", Reader::NodalOrdering::Global, Reader::IndexingBase::One);
+    Reader reader("basic.msh", Reader::nodal_order::global, Reader::index_base::one);
 }

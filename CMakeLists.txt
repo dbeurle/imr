@@ -17,8 +17,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 option(ENABLE_DEBUG "Enable debug information" OFF)
 option(ENABLE_COVERAGE "Set compiler flag for coverage analysis" OFF)
-
 option(ENABLE_TEST "Enable the test suite" ON)
+
+option(ENABLE_NATIVE_OPT "Enable native optimisations" OFF)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts ${CMAKE_MODULE_PATH})
 if(ENABLE_COVERAGE)
@@ -52,6 +53,6 @@ add_subdirectory(src)
 add_subdirectory(examples)
 
 add_executable(imr src/main.cpp)
-target_link_libraries(imr reader ${Boost_LIBRARIES})
+target_link_libraries(imr mesh_reader ${Boost_LIBRARIES})
 
 install(TARGETS imr RUNTIME DESTINATION bin)

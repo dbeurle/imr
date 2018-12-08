@@ -1,5 +1,5 @@
 
-#include "mesh_reader.hpp"
+#include "gmsh_reader.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -12,30 +12,31 @@
 
 namespace imr
 {
-mesh_reader::mesh_reader(std::string const& input_file_name,
-                         NodalOrdering const ordering,
-                         IndexingBase const base,
+gmsh_reader::gmsh_reader(std::string const& filename,
+                         nodal_order const ordering,
+                         index_base const base,
                          distributed const distributed_option)
-    : input_file_name(input_file_name),
-      useZeroBasedIndexing(base == IndexingBase::Zero),
-      useLocalNodalConnectivity(ordering == NodalOrdering::Local),
+    : mesh_reader(filename),
+      input_file_name(filename),
+      useZeroBasedIndexing(base == index_base::zero),
+      useLocalNodalConnectivity(ordering == nodal_order::local),
       is_feti_format(distributed_option == distributed::feti)
 {
-    fillMesh();
+    this->parse();
 }
 
-void mesh_reader::fillMesh()
+void gmsh_reader::parse()
 {
-    auto const start = std::chrono::high_resolution_clock::now();
+    auto const start = std::chrono::steady_clock::now();
 
-    std::fstream gmsh_file(input_file_name);
+    std::ifstream gmsh_file(input_file_name);
 
     if (!gmsh_file.is_open())
     {
         throw std::domain_error("Input file " + input_file_name + " was not able to be opened");
     }
 
-    std::string token, null;
+    std::string token;
 
     // Loop around file and read in keyword tokens
     while (!gmsh_file.eof())
@@ -44,6 +45,8 @@ void mesh_reader::fillMesh()
 
         if (token == "$MeshFormat")
         {
+            std::string null;
+
             float gmshVersion;     // File format version
             std::int32_t dataType; // Precision
 
@@ -57,7 +60,7 @@ void mesh_reader::fillMesh()
             std::int32_t physicalIds;
             gmsh_file >> physicalIds;
 
-            for (auto i = 0; i < physicalIds; ++i)
+            for (std::int32_t i = 0; i < physicalIds; ++i)
             {
                 std::int32_t dimension, physicalId;
                 gmsh_file >> dimension >> physicalId >> physical_name;
@@ -78,25 +81,25 @@ void mesh_reader::fillMesh()
 
             for (auto& node : nodal_data)
             {
-                gmsh_file >> node.id >> node.coordinates[0] >> node.coordinates[1] >>
+                gmsh_file >> node.index >> node.coordinates[0] >> node.coordinates[1] >>
                     node.coordinates[2];
             }
         }
         else if (token == "$Elements")
         {
-            int elementIds;
-            gmsh_file >> elementIds;
+            std::int64_t element_count;
+            gmsh_file >> element_count;
 
-            for (std::int64_t elementId = 0; elementId < elementIds; elementId++)
+            for (std::int64_t count = 0; count < element_count; count++)
             {
-                int id = 0, numberOfTags = 0, elementTypeId = 0;
+                std::int64_t element_index = 0;
 
-                gmsh_file >> id >> elementTypeId >> numberOfTags;
+                int tags_size = 0, element_type = 0;
 
-                auto const numberOfNodes = mapElementData(elementTypeId);
+                gmsh_file >> element_index >> element_type >> tags_size;
 
-                std::vector<std::int32_t> tags(numberOfTags, 0);
-                std::vector<std::int64_t> node_indices(numberOfNodes, 0);
+                std::vector<std::int32_t> tags(tags_size, 0);
+                std::vector<std::int64_t> node_indices(nodes_per_element(element_type), 0);
 
                 for (auto& tag : tags)
                 {
@@ -108,97 +111,53 @@ void mesh_reader::fillMesh()
                     gmsh_file >> node_index;
                 }
 
-                auto const physicalId = tags[0];
+                auto const physical_index = tags[0];
 
-                element elementData(std::move(node_indices), tags, elementTypeId, id);
+                element element_data(std::move(node_indices), tags, element_type, element_index);
 
                 // Update the total number of partitions on the fly
-                m_partitions = std::max(elementData.maxProcessId(), m_partitions);
+                m_partitions = std::max(element_data.maxProcessId(), m_partitions);
 
-                // Copy the element data into the mesh structure
-                meshes[{physicalGroupMap[physicalId], elementTypeId}].push_back(elementData);
-
-                if (elementData.isSharedByMultipleProcesses())
+                if (element_data.is_shared())
                 {
                     for (int i = 4; i < tags[2] + 3; ++i)
                     {
                         auto const owner_sharer = std::make_pair(tags[3], std::abs(tags[i]));
 
-                        auto const& connectivity = elementData.node_indices();
+                        auto const& indices = element_data.node_indices();
 
-                        interfaceElementMap[owner_sharer].insert(std::begin(connectivity),
-                                                                 std::end(connectivity));
+                        interfaceElementMap[owner_sharer].insert(std::begin(indices),
+                                                                 std::end(indices));
                     }
                 }
+                // Copy the element data into the mesh structure
+                meshes[{physicalGroupMap[physical_index], element_type}].emplace_back(element_data);
             }
         }
     }
     std::cout << std::string(2, ' ') << "A total number of " << m_partitions
               << " partitions were found\n";
 
-    auto const end = std::chrono::high_resolution_clock::now();
+    auto const end = std::chrono::steady_clock::now();
 
     std::chrono::duration<double> elapsed_seconds = end - start;
     std::cout << "Mesh data structure filled in " << elapsed_seconds.count() << "s\n";
 }
 
-int mesh_reader::mapElementData(int const elementTypeId)
+void gmsh_reader::checkSupportedGmsh(float const gmshVersion)
 {
-    // Return the number of local nodes per element
-    switch (elementTypeId)
-    {
-        case LINE2: return 2; break;
-        case TRIANGLE3: return 3; break;
-        case QUADRILATERAL4: return 4; break;
-        case TETRAHEDRON4: return 4; break;
-        case HEXAHEDRON8: return 8; break;
-        case PRISM6: return 6; break;
-        case PYRAMID5: return 5; break;
-        case LINE3: return 3; break;
-        case TRIANGLE6: return 6; break;
-        case QUADRILATERAL9: return 9; break;
-        case TETRAHEDRON10: return 10; break;
-        case HEXAHEDRON27: return 27; break;
-        case PRISM18: return 18; break;
-        case PYRAMID14: return 14; break;
-        case POINT: return 1; break;
-        case QUADRILATERAL8: return 8; break;
-        case HEXAHEDRON20: return 20; break;
-        case PRISM15: return 15; break;
-        case PYRAMID13: return 13; break;
-        case TRIANGLE9: return 19; break;
-        case TRIANGLE10: return 10; break;
-        case TRIANGLE12: return 12; break;
-        case TRIANGLE15: return 15; break;
-        case TRIANGLE15_IC: return 15; break;
-        case TRIANGLE21: return 21; break;
-        case EDGE4: return 4; break;
-        case EDGE5: return 5; break;
-        case EDGE6: return 6; break;
-        case TETRAHEDRON20: return 20; break;
-        case TETRAHEDRON35: return 35; break;
-        case TETRAHEDRON56: return 56; break;
-        case HEXAHEDRON64: return 64; break;
-        case HEXAHEDRON125: return 125; break;
-        default:
-            throw std::domain_error("The elementTypeId " + std::to_string(elementTypeId) +
-                                    " is not implemented");
-    }
-    return -1;
-}
-
-void mesh_reader::checkSupportedGmsh(float const gmshVersion)
-{
-    if (gmshVersion < 2.2)
+    if (gmshVersion < 2.2f || gmshVersion > 2.25f)
     {
         throw std::runtime_error("GmshVersion " + std::to_string(gmshVersion) +
                                  " is not supported");
     }
 }
 
-void mesh_reader::write(bool const print_indices) const
+void gmsh_reader::write() const
 {
-    for (int partition = 0; partition < m_partitions; ++partition)
+    bool const print_indices = false;
+
+    for (std::int32_t partition = 0; partition < m_partitions; ++partition)
     {
         Mesh process_mesh;
 
@@ -236,7 +195,7 @@ void mesh_reader::write(bool const print_indices) const
 
             for (auto& localNode : local_nodes)
             {
-                --localNode.id;
+                --localNode.index;
             }
 
             for (auto& mesh : process_mesh)
@@ -260,7 +219,7 @@ void mesh_reader::write(bool const print_indices) const
     }
 }
 
-std::vector<std::int64_t> mesh_reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
+std::vector<std::int64_t> gmsh_reader::fillLocalToGlobalMap(Mesh const& process_mesh) const
 {
     std::vector<std::int64_t> local_global_mapping;
 
@@ -282,7 +241,7 @@ std::vector<std::int64_t> mesh_reader::fillLocalToGlobalMap(Mesh const& process_
     return local_global_mapping;
 }
 
-void mesh_reader::reorderLocalMesh(Mesh& process_mesh,
+void gmsh_reader::reorderLocalMesh(Mesh& process_mesh,
                                    std::vector<std::int64_t> const& local_global_mapping) const
 {
     for (auto& mesh : process_mesh)
@@ -304,7 +263,7 @@ void mesh_reader::reorderLocalMesh(Mesh& process_mesh,
 }
 
 std::vector<node>
-mesh_reader::fillLocalNodeList(std::vector<std::int64_t> const& local_global_mapping) const
+gmsh_reader::fillLocalNodeList(std::vector<std::int64_t> const& local_global_mapping) const
 {
     std::vector<node> local_nodal_data;
     local_nodal_data.reserve(local_global_mapping.size());
@@ -316,7 +275,7 @@ mesh_reader::fillLocalNodeList(std::vector<std::int64_t> const& local_global_map
     return local_nodal_data;
 }
 
-void mesh_reader::write_json(Mesh const& process_mesh,
+void gmsh_reader::write_json(Mesh const& process_mesh,
                              std::vector<std::int64_t> const& localToGlobalMapping,
                              std::vector<node> const& nodalCoordinates,
                              int const partition_number,
@@ -352,7 +311,7 @@ void mesh_reader::write_json(Mesh const& process_mesh,
 
         if (print_indices)
         {
-            nodeGroup["Indices"].append(node.id);
+            nodeGroup["Indices"].append(node.index);
         }
     }
     event["Nodes"].append(nodeGroup);
@@ -373,7 +332,10 @@ void mesh_reader::write_json(Mesh const& process_mesh,
 
             elementGroupNodalConnectivity.append(connectivity);
 
-            if (print_indices) elementGroup["Indices"].append(element_data.id());
+            if (print_indices)
+            {
+                elementGroup["Indices"].append(element_data.index());
+            }
         }
 
         elementGroup["Name"] = mesh.first.first;

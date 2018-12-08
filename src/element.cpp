@@ -9,9 +9,9 @@ namespace imr
 {
 element::element(std::vector<std::int64_t> node_indices,
                  std::vector<std::int32_t> tags,
-                 int const typeId,
-                 int const id)
-    : m_indices(std::move(node_indices)), m_typeId(typeId), m_id(id)
+                 int const element_type,
+                 int const element_index)
+    : basic_element(element_index, std::move(node_indices)), m_element_type(element_type)
 {
     if (tags.empty())
     {
@@ -29,12 +29,12 @@ element::element(std::vector<std::int64_t> node_indices,
     // 2 - Number of processes element belongs to
     // 3 - If tags[2] > 1 then owner
     // 4... - Ghost element processes (shared by processes)
-    m_physicalId  = tags[Property::Physical];
-    m_geometricId = tags[Property::Geometric];
+    m_physical_index  = tags[property::physical];
+    m_geometric_index = tags[property::geometric];
 
-    m_isElementShared = tags.size() > 2;
+    m_is_shared = tags.size() > 2;
 
-    if (m_isElementShared)
+    if (m_is_shared)
     {
         // Pull out the ending tags and populate the partitionTags vector
         auto const shared_between = tags[2];
@@ -60,7 +60,7 @@ void element::convertToZeroBasedIndexing()
     std::transform(begin(m_indices), end(m_indices), begin(m_indices), [](auto const index) {
         return index - 1;
     });
-    --m_id;
+    --m_index;
 }
 
 } // namespace imr

@@ -21,5 +21,5 @@ foreach(example
     threePointBending
     )
     add_executable(${example} ${example}.cpp)
-    target_link_libraries(${example} LINK_PUBLIC reader)
+    target_link_libraries(${example} LINK_PUBLIC gmsh_reader)
 endforeach()

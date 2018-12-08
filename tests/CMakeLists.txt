@@ -5,6 +5,6 @@ execute_process(COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE
 # generate tests
 foreach(test ReaderTest)
     add_executable(${test} ${test}.cpp)
-    target_link_libraries(${test} PRIVATE reader Catch2::Catch2)
+    target_link_libraries(${test} PRIVATE gmsh_reader Catch2::Catch2)
     add_test(${test} ${CMAKE_CURRENT_BUILD_DIR}/${test})
 endforeach()

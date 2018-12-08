@@ -6,42 +6,73 @@
 
 namespace imr
 {
-class element
+class basic_element
 {
 public:
-    enum Property { Physical = 0, Geometric };
+    explicit basic_element(std::int64_t const index, std::vector<std::int64_t> indices)
+        : m_index(index), m_indices(indices)
+    {
+    }
+
+    /// \return The integer index of the element
+    auto index() const -> std::int64_t { return m_index; }
+
+    /// \return A std::vector of integers containing the indices
+    auto node_indices() const -> std::vector<std::int64_t> const& { return m_indices; }
+
+    /// \return A std::vector of integers containing the indices
+    auto node_indices() -> std::vector<std::int64_t>& { return m_indices; }
+
+protected:
+    /// Element index in mesh
+    std::int64_t m_index;
+    /// List of nodes that make up this element
+    std::vector<std::int64_t> m_indices;
+};
+
+class element : public basic_element
+{
+public:
+    enum property { physical = 0, geometric };
 
 public:
     explicit element(std::vector<std::int64_t> node_indices,
                      std::vector<int> tags,
-                     int const typeId,
-                     int const id);
+                     int const element_type,
+                     int const element_index);
 
-    int id() const noexcept { return m_id; }
+    auto type() const -> std::int32_t { return m_element_type; }
 
-    int typeId() const noexcept { return m_typeId; }
-
-    int physicalId() const noexcept { return m_physicalId; }
-
-    int geometricId() const noexcept { return m_geometricId; }
-
-    int maxProcessId() const noexcept { return m_maxProcessId; }
-
-    bool isOwnedByProcess(int const processId) const noexcept
+    [[deprecated("Use physical_index() instead")]] auto physicalId() const -> std::int32_t
     {
-        return processId == m_processOwner;
+        return m_physical_index;
+    }
+
+    [[deprecated("Use geometric_index() instead")]] auto geometricId() const -> std::int32_t
+    {
+        return m_geometric_index;
+    }
+
+    [[deprecated("Use largest_process() instead")]] auto maxProcessId() const -> std::int32_t
+    {
+        return m_maxProcessId;
+    }
+
+    auto physical_index() const -> std::int32_t { return m_physical_index; }
+
+    auto geometric_index() const -> std::int32_t { return m_geometric_index; }
+
+    auto largest_process() const -> std::int32_t { return m_maxProcessId; }
+
+    bool isOwnedByProcess(int const process_number) const noexcept
+    {
+        return process_number == m_processOwner;
     }
 
     auto owner_process() const noexcept { return m_processOwner; }
 
-    bool isSharedByMultipleProcesses() const noexcept
-    {
-        return m_isElementShared && m_partitionTags[0] > 1;
-    }
-
-    std::vector<std::int64_t> const& node_indices() const noexcept { return m_indices; }
-
-    std::vector<std::int64_t>& node_indices() noexcept { return m_indices; }
+    /// \return True is the element is shared across multiple decompositions
+    bool is_shared() const noexcept { return m_is_shared && m_partitionTags[0] > 1; }
 
     std::vector<int> const& partitionTags() const noexcept { return m_partitionTags; }
 
@@ -50,17 +81,15 @@ public:
 
 private:
     std::vector<std::int32_t> m_partitionTags;
-    std::vector<std::int64_t> m_indices;
 
-    int m_physicalId;
-    int m_geometricId;
-    int m_typeId;
-    int m_id;
+    std::int32_t m_physical_index;
+    std::int32_t m_geometric_index;
+    std::int32_t m_element_type;
 
-    int m_maxProcessId = 1;
-    int m_processOwner = 1;
+    std::int32_t m_maxProcessId = 1;
+    std::int32_t m_processOwner = 1;
 
-    bool m_isElementShared = false;
+    bool m_is_shared = false;
 };
 
 } // namespace imr

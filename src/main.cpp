@@ -1,8 +1,37 @@
 
-#include "mesh_reader.hpp"
+#include "reader_factory.hpp"
 
 #include <boost/program_options.hpp>
 #include <iostream>
+
+namespace po = boost::program_options;
+
+// Define and parse the program options
+static po::options_description create_options()
+{
+
+    po::options_description visible("Options");
+
+    visible.add_options()("help", "Print help messages");
+
+    visible.add_options()("zero-based",
+                          "Use zero based indexing for elements and nodes.  Default: "
+                          "one-based.");
+
+    visible.add_options()("local-ordering",
+                          "For distributed meshes, each processor has local indexing "
+                          "and a local to global mapping.  Default: global-ordering");
+
+    visible.add_options()("with-indices",
+                          "Write out extra indices (results in file size increase).  "
+                          "Default without-indices");
+
+    visible.add_options()("interprocess-format",
+                          "Write out shared process interfaces (only for decomposed meshes).  "
+                          "Default feti-format");
+
+    return visible;
+}
 
 int main(int argc, char* argv[])
 {
@@ -11,28 +40,7 @@ int main(int argc, char* argv[])
     // Parse the command line options and process the mesh
     try
     {
-        // Define and parse the program options
-        namespace po = boost::program_options;
-
-        po::options_description visible("Options");
-
-        visible.add_options()("help", "Print help messages");
-
-        visible.add_options()("zero-based",
-                              "Use zero based indexing for elements and nodes.  Default: "
-                              "one-based.");
-
-        visible.add_options()("local-ordering",
-                              "For distributed meshes, each processor has local indexing "
-                              "and a local to global mapping.  Default: global-ordering");
-
-        visible.add_options()("with-indices",
-                              "Write out extra indices (results in file size increase).  "
-                              "Default without-indices");
-
-        visible.add_options()("interprocess-format",
-                              "Write out shared process interfaces (only for decomposed meshes).  "
-                              "Default feti-format");
+        auto visible = create_options();
 
         po::options_description hidden("Hidden options");
 
@@ -70,31 +78,31 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        IndexingBase const indexing = vm.count("zero-based") > 0 ? IndexingBase::Zero
-                                                                 : IndexingBase::One;
+        index_base const indexing = vm.count("zero-based") > 0 ? index_base::zero : index_base::one;
 
-        NodalOrdering const ordering = vm.count("local-ordering") > 0 ? NodalOrdering::Local
-                                                                      : NodalOrdering::Global;
+        nodal_order const ordering = vm.count("local-ordering") > 0 ? nodal_order::local
+                                                                    : nodal_order::global;
 
         distributed const distributed_option = vm.count("interprocess-format") > 0
                                                    ? distributed::interprocess
                                                    : distributed::feti;
 
         std::cout << "\nPerforming mesh conversion with "
-                  << (indexing == IndexingBase::Zero ? "zero" : "one")
+                  << (indexing == index_base::zero ? "zero" : "one")
                   << " based indexing for node indices\n\n";
 
         if (vm.count("input-file"))
         {
             for (auto const& input : vm["input-file"].as<std::vector<std::string>>())
             {
-                mesh_reader reader(input, ordering, indexing, distributed_option);
-                reader.write(vm.count("with-indices") > 0);
+                auto const reader = make_reader(input, ordering, indexing, distributed_option);
+                reader->parse();
+                reader->write();
             }
         }
         else
         {
-            throw std::runtime_error("Missing \".msh\" input file!\n");
+            throw std::runtime_error("Missing the input file!\n");
         }
     }
     catch (std::exception& error)

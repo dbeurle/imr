@@ -11,8 +11,8 @@ TEST_CASE("Ensure exceptions are thrown")
     SECTION("Throw a GmshReaderException for invalid mesh files")
     {
         REQUIRE_THROWS_AS(mesh_reader("invalid_file_name",
-                                      NodalOrdering::Global,
-                                      IndexingBase::One,
+                                      nodal_order::global,
+                                      index_base::one,
                                       distributed::feti),
                           std::domain_error);
     }
@@ -24,14 +24,14 @@ TEST_CASE("Tests for basic ElementData")
     std::vector<std::int64_t> node_indices{2, 14, 22, 18};
     std::vector<int> tags{4, 16};
 
-    constexpr auto id = 1, typeId = 3;
+    constexpr auto id = 1, type = 3;
 
-    element elementData(node_indices, tags, typeId, id);
+    element elementData(node_indices, tags, type, id);
 
     SECTION("Data entry sanity check")
     {
-        REQUIRE(elementData.id() == id);
-        REQUIRE(elementData.typeId() == typeId);
+        REQUIRE(elementData.index() == id);
+        REQUIRE(elementData.type() == type);
         REQUIRE(elementData.node_indices().size() == node_indices.size());
         REQUIRE(elementData.physicalId() == 4);
         REQUIRE(elementData.geometricId() == 16);
@@ -50,17 +50,17 @@ TEST_CASE("Tests for basic ElementData")
         {
             REQUIRE(node_indices[i] - 1 == elementData.node_indices()[i]);
         }
-        REQUIRE(elementData.id() == 0);
+        REQUIRE(elementData.index() == 0);
     }
 }
 TEST_CASE("Tests for decomposed ElementData")
 {
     // 1 3 5 999 1 2 3 -4 402 233 450 197
-    constexpr auto id = 1, typeId = 3;
+    constexpr auto id = 1, type = 3;
     std::vector<std::int64_t> node_indices{402, 233, 450, 197};
     std::vector<int> tags{999, 1, 2, 3, -4};
 
-    element elementData(node_indices, tags, typeId, id);
+    element elementData(node_indices, tags, type, id);
 
     REQUIRE(elementData.partitionTags().size() == 3);
 
@@ -72,8 +72,8 @@ TEST_CASE("Tests for decomposed ElementData")
 TEST_CASE("Tests for Reader")
 {
     mesh_reader reader("decomposed.msh",
-                       NodalOrdering::Local,
-                       IndexingBase::Zero,
+                       nodal_order::local,
+                       index_base::zero,
                        distributed::feti);
 
     REQUIRE(reader.numberOfPartitions() == 4);
